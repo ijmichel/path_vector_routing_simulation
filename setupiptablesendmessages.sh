@@ -1,0 +1,40 @@
+sudo iptables -D OUTPUT -s 10.1.1.0 -d 10.1.1.255 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.255 -d 10.1.1.0 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.1 -d 10.1.1.255 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.255 -d 10.1.1.1 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.2 -d 10.1.1.3 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.3 -d 10.1.1.2 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.4 -d 10.1.1.3 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.3 -d 10.1.1.4 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.4 -d 10.1.1.7 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.7 -d 10.1.1.4 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.2 -d 10.1.1.5 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.5 -d 10.1.1.2 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.4 -d 10.1.1.1 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.1 -d 10.1.1.4 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.6 -d 10.1.1.5 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.5 -d 10.1.1.6 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.6 -d 10.1.1.1 -j ACCEPT;
+sudo iptables -D OUTPUT -s 10.1.1.1 -d 10.1.1.6 -j ACCEPT;
+sleep 2.0;
+echo Done 2
+
+sudo iptables -I OUTPUT -s 10.1.1.0 -d 10.1.1.255 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.255 -d 10.1.1.0 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.1 -d 10.1.1.255 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.255 -d 10.1.1.1 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.2 -d 10.1.1.3 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.3 -d 10.1.1.2 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.4 -d 10.1.1.3 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.3 -d 10.1.1.4 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.4 -d 10.1.1.7 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.7 -d 10.1.1.4 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.2 -d 10.1.1.5 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.5 -d 10.1.1.2 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.4 -d 10.1.1.1 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.1 -d 10.1.1.4 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.6 -d 10.1.1.5 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.5 -d 10.1.1.6 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.6 -d 10.1.1.1 -j ACCEPT;
+sudo iptables -I OUTPUT -s 10.1.1.1 -d 10.1.1.6 -j ACCEPT;
+echo Done 1
