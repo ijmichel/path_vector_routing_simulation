@@ -47,7 +47,34 @@ int main(int argc, char** argv)
 	
 	
 	//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.
-	
+
+    char costs[255][1];
+
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    const size_t path_size = strlen(argv[2]) + 1;
+    char* path = malloc(path_size);
+    strcat( path, argv[2] );
+
+    fp = fopen(path, "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+
+    while ((read = getline(&line, &len, fp)) != -1) {
+        int id,cost;
+        sscanf(line, "%d %d\n", &id,&cost);
+        costs[id][1] = cost;
+    }
+
+//    fprintf(stdout,"%d",costs[5][1]);
+//    fprintf(stdout,"%d",costs[2][1]);
+
+    fclose(fp);
+    if (line)
+        free(line);
 
 	//socket() and bind() our socket. We will do all sendto()ing and recvfrom()ing on this one.
 	if((globalSocketUDP=socket(AF_INET, SOCK_DGRAM, 0)) < 0)

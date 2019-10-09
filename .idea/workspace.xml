@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="programmingassignment2" targetName="main" />
       <config projectName="programmingassignment2" targetName="manager_send" />
+      <config projectName="programmingassignment2" targetName="main" />
     </generated>
   </component>
   <component name="CMakeSettings" AUTO_RELOAD="true">
@@ -12,7 +12,15 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f99f2f53-f1c5-4e5c-a26c-06e54e9039d6" name="Default Changelist" comment="" />
+    <list default="true" id="f99f2f53-f1c5-4e5c-a26c-06e54e9039d6" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/main.c.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/main.c.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/manager_send.dir/depend.make" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/manager_send.dir/depend.make" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/main" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/main" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/manager_send" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/manager_send" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test1/costs1" beforeDir="false" afterPath="$PROJECT_DIR$/test1/costs1" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +35,11 @@
     <favorites_list name="programmingassignment2" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="test" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="IgnoredFileRootStore">
@@ -40,6 +53,7 @@
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../unicast_grading" />
     <property name="settings.editor.selected.configurable" value="CMakeSettings" />
   </component>
   <component name="RunDashboard">
@@ -54,8 +68,8 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="CMake Application.main node 3">
-    <configuration name="main node 1" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="1 ./test/costs1 node1log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+  <component name="RunManager" selected="CMake Application.main node 1">
+    <configuration name="main node 1" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="1 ../test1/costs1 node1log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -65,7 +79,7 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="main node 3" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3 ./test/costs3 node3log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+    <configuration name="main node 3" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3 ../test1/costs3 node3log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -93,6 +107,12 @@
       <option name="presentableId" value="Default" />
       <updated>1570493649503</updated>
       <workItem from="1570493664176" duration="1500000" />
+      <workItem from="1570495424114" duration="225000" />
+      <workItem from="1570578278928" duration="958000" />
+      <workItem from="1570579635720" duration="344000" />
+      <workItem from="1570580572681" duration="547000" />
+      <workItem from="1570581234981" duration="1242000" />
+      <workItem from="1570582595938" duration="386000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit 2">
       <created>1570494297423</created>
@@ -101,7 +121,14 @@
       <option name="project" value="LOCAL" />
       <updated>1570494297423</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Initial Commit 2">
+      <created>1570495616437</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1570495616437</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -112,7 +139,9 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>
@@ -121,5 +150,21 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial Commit 2" />
     <option name="LAST_COMMIT_MESSAGE" value="Initial Commit 2" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/main.c</url>
+          <line>71</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/main.c</url>
+          <line>68</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
