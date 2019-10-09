@@ -1,1 +1,1 @@
-/usr/bin/gcc  -g   CMakeFiles/main.dir/main.c.o  -o main -pthread 
+/usr/bin/cc -g   CMakeFiles/main.dir/main.c.o  -o main -pthread 

@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/manager_send.dir/manager_send.c.o"
-  "manager_send.pdb"
   "manager_send"
+  "manager_send.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

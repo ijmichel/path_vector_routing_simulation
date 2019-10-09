@@ -1,1 +1,1 @@
-/usr/bin/gcc  -g   CMakeFiles/manager_send.dir/manager_send.c.o  -o manager_send 
+/usr/bin/cc -g   CMakeFiles/manager_send.dir/manager_send.c.o  -o manager_send 
