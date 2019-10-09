@@ -21,6 +21,8 @@ extern int globalSocketUDP;
 //pre-filled for sending to 10.1.1.0 - 255, port 7777
 extern struct sockaddr_in globalNodeAddrs[256];
 
+extern char costs[255][1];
+
 
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
@@ -73,7 +75,9 @@ void listenForNeighbors()
 					strchr(strchr(strchr(fromAddr,'.')+1,'.')+1,'.')+1);
 
 			if(heardFrom != -1){
-//                fprintf(stdout,"\n%d hearing: %d\n",globalMyID,heardFrom);
+                fprintf(stdout,"%d",costs[5][1]);
+                fprintf(stdout,"%d",costs[2][1]);
+                fprintf(stdout,"\n%d hearing: %d\n",globalMyID,heardFrom);
 			}
 			//TODO: this node can consider heardFrom to be directly connected to it; do any such logic now.
 			
