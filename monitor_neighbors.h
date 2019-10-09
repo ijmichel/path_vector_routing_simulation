@@ -23,6 +23,13 @@ extern struct sockaddr_in globalNodeAddrs[256];
 
 extern char costs[255][1];
 
+typedef struct {
+    int idDestination; //id of node I know how to get to
+    int cost; //cost to get there
+    int path[255][255]; //path to get there [0][2] means 0th step go to destination 2.
+} path;
+
+path pathsIKnow[1000];
 
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
