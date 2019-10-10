@@ -11,6 +11,8 @@ void* announceToNeighbors(void* unusedParam);
 
 void readCostsFile(char *const *argv);
 
+void initKnownPaths();
+
 int globalMyID = 0;
 //last time you heard from each node. TODO: you will want to monitor this
 //in order to realize when a neighbor has gotten cut off from you.
@@ -21,7 +23,9 @@ int globalSocketUDP;
 //pre-filled for sending to 10.1.1.0 - 255, port 7777
 struct sockaddr_in globalNodeAddrs[256];
 
-char costs[255][1];
+char costs[255];
+
+path pathsIKnow[1000];
 
 int main(int argc, char** argv)
 {
@@ -51,6 +55,7 @@ int main(int argc, char** argv)
 	
 	//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.
     readCostsFile(argv);
+	initKnownPaths();
 
     //socket() and bind() our socket. We will do all sendto()ing and recvfrom()ing on this one.
 	if((globalSocketUDP=socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -82,6 +87,12 @@ int main(int argc, char** argv)
 
 }
 
+void initKnownPaths() {
+    for(int i=0 ;i < sizeof(pathsIKnow) / sizeof(pathsIKnow[0]);i ++){
+        pathsIKnow[i].cost = 9999;
+    }
+}
+
 /**
  * Because the system sends us the initial costs of nodes which we can use
  * to associate to our neighbors
@@ -104,7 +115,7 @@ void readCostsFile(char *const *argv) {
     while ((read = getline(&line, &len, fp)) != -1) {
         int id,cost;
         sscanf(line, "%d %d\n", &id,&cost);
-        costs[id][1] = cost;
+        costs[id] = cost;
     }
 
 //    fprintf(stdout,"%d",costs[5][1]);
