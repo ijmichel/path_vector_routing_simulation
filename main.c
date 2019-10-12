@@ -29,6 +29,7 @@ path pathsIKnow[1000];
 
 int main(int argc, char** argv)
 {
+
 	if(argc != 4)
 	{
 		fprintf(stderr, "Usage: %s mynodeid initialcostsfile logfile\n\n", argv[0]);
@@ -51,6 +52,8 @@ int main(int argc, char** argv)
 		globalNodeAddrs[i].sin_port = htons(7777);
 		inet_pton(AF_INET, tempaddr, &globalNodeAddrs[i].sin_addr);
 	}
+
+    fprintf(stdout,"Boot up! --> %d \n", globalMyID);
 	
 	
 	//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.

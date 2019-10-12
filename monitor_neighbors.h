@@ -30,11 +30,25 @@ extern int globalSocketUDP;
 //pre-filled for sending to 10.1.1.0 - 255, port 7777
 extern struct sockaddr_in globalNodeAddrs[256];
 
+struct timeval getCurrentTime();
+
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf);
+
+/**
+ * Convience method to get current time
+ * @return
+ */
+struct timeval getCurrentTime() {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return tv;
+}
 
 int getNeigborCost(short heardFrom);
 
 void establishNeighbor(short heardFrom);
+
+void updateLastHeardTime(short from);
 
 extern char costs[255];
 
@@ -90,7 +104,9 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
                 strchr(strchr(strchr(fromAddr, '.') + 1, '.') + 1, '.') + 1);
 
         if (heardFrom != -1) {
+//            printf(stdout, "\n%d hearing: %d\n", globalMyID, heardFrom);
             establishNeighbor(heardFrom);
+            updateLastHeardTime(heardFrom);
 
             // printf(stdout, "%d", costs[5][1]);
             // printf(stdout, "%d", costs[2][1]);
@@ -119,6 +135,41 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
     //TODO now check for the various types of packets you use in your own protocol
 //else if(!strncmp(recvBuf, "your other message types", ))
 // ...
+}
+
+/**
+ * Because we want to know if destinations can't be reached anymore
+ * in seconds
+ * @param from
+ * @param seconds
+ * @return
+ */
+bool notHeardFromSince(short from, short seconds) {
+    struct timeval tv;
+    time_t curtime;
+    gettimeofday(&tv, 0);
+    curtime = tv.tv_sec;
+
+    time_t lastHeardTime;
+    time_t delta = curtime - globalLastHeartbeat[from].tv_sec;
+
+    if(delta >= seconds){
+        return true;
+    }
+}
+
+/**
+ * Because we want to know if destinations can't be reached anymore
+ * in seconds
+ * @param from
+ * @param seconds
+ * @return
+ */
+void updateLastHeardTime(short from) {
+    struct timeval tv = getCurrentTime();
+    globalLastHeartbeat[from] = tv;
+
+    fprintf(stdout,"Last Heard from %d at this time --> %d\n",from, globalLastHeartbeat[from]);
 }
 
 /**
