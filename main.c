@@ -4,28 +4,18 @@
 
 #include "monitor_neighbors.h"
 
-
 void listenForNeighbors();
 void* announceToNeighbors(void* unusedParam);
-
-
 void readCostsFile(char *const *argv);
-
 void initKnownPaths();
 
 int globalMyID = 0;
-//last time you heard from each node. TODO: you will want to monitor this
-//in order to realize when a neighbor has gotten cut off from you.
 struct timeval globalLastHeartbeat[256];
-
-//our all-purpose UDP socket, to be bound to 10.1.1.globalMyID, port 7777
 int globalSocketUDP;
-//pre-filled for sending to 10.1.1.0 - 255, port 7777
 struct sockaddr_in globalNodeAddrs[256];
-
 char costs[255];
-
 path pathsIKnow[1000];
+bool idsWithUpdates[256];
 
 int main(int argc, char** argv)
 {

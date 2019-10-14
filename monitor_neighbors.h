@@ -16,8 +16,11 @@ typedef struct {
     int idDestination; //id of node I know how to get to
     int cost; //cost to get there
     int path[255]; //The [0]th element is the id of the first node in the path
+    bool alreadyKnow;
+    bool disconnected;
 } path;
 
+static const int SLEEPTIME = 300 * 1000 * 1000; //300 ms
 extern path pathsIKnow[1000];
 
 extern int globalMyID;
@@ -29,6 +32,8 @@ extern struct timeval globalLastHeartbeat[256];
 extern int globalSocketUDP;
 //pre-filled for sending to 10.1.1.0 - 255, port 7777
 extern struct sockaddr_in globalNodeAddrs[256];
+
+extern bool idsWithUpdates[256];
 
 struct timeval getCurrentTime();
 
@@ -44,11 +49,22 @@ struct timeval getCurrentTime() {
     return tv;
 }
 
+struct timespec getHowLongToSleep();
+
 int getNeigborCost(short heardFrom);
+
+struct timespec getHowLongToSleep() {
+    struct timespec sleepFor;
+    sleepFor.tv_sec = 0;
+    sleepFor.tv_nsec = SLEEPTIME;
+    return sleepFor;
+}
 
 void establishNeighbor(short heardFrom);
 
 void updateLastHeardTime(short from);
+
+char *convertKnownPathToBuffer(int i);
 
 extern char costs[255];
 
@@ -63,15 +79,54 @@ void hackyBroadcast(const char *buf, int length) {
                    (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
 }
 
+//To keep track of disconnects
 void *announceToNeighbors(void *unusedParam) {
-    struct timespec sleepFor;
-    sleepFor.tv_sec = 0;
-    sleepFor.tv_nsec = 300 * 1000 * 1000; //300 ms
+    struct timespec sleepFor = getHowLongToSleep();
     while (1) {
-        hackyBroadcast("HEREIAM", 7);
+        hackyBroadcast("KEEPALIVE", 9);
         nanosleep(&sleepFor, 0);
     }
 }
+
+
+void hackyUpdate() {
+    int i;
+    for (i = 0; i < 256; i++)
+        if (i != globalMyID){
+            char *buf;
+
+            for(int i= 0; i< 256; i++){
+                if(idsWithUpdates[i]){
+                    char *updateDataForI = convertKnownPathToBuffer(i);
+                }
+            }
+            int length = 7;
+            sendto(globalSocketUDP, buf, length, 0,
+                   (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+        }
+
+}
+
+char *convertKnownPathToBuffer(int i) {
+    path dPath = pathsIKnow[i];
+    for(int i= 0; i< 256; i++){
+        int step = dPath.path[i];
+        char stepc;
+        memset(&globalNodeAddrs[i], 0, sizeof(globalNodeAddrs[i]));
+        stepc = stepc + "-" + (step + '0');
+    }
+
+}
+
+//So they know when I change state
+void *updateNeighbors(void *unusedParam) {
+    struct timespec sleepFor = getHowLongToSleep();
+    while (1) {
+        hackyUpdate();
+        nanosleep(&sleepFor, 0);
+    }
+}
+
 
 void listenForNeighbors() {
     char fromAddr[100];
@@ -103,19 +158,21 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
         heardFrom = atoi(
                 strchr(strchr(strchr(fromAddr, '.') + 1, '.') + 1, '.') + 1);
 
-        if (heardFrom != -1) {
-//            printf(stdout, "\n%d hearing: %d\n", globalMyID, heardFrom);
-            establishNeighbor(heardFrom);
-            updateLastHeardTime(heardFrom);
-
-            // printf(stdout, "%d", costs[5][1]);
-            // printf(stdout, "%d", costs[2][1]);
-            // printf(stdout, "\n%d hearing: %d\n", globalMyID, heardFrom);
+        if (!strncmp(recvBuf, "KEEPALIVE", 7)) {
+            if (heardFrom != -1) {
+                updateLastHeardTime(heardFrom);
+                establishNeighbor(heardFrom);
+            }
         }
+
+        if (!strncmp(recvBuf, "UPDATE", 7)) {
+
+        }
+
         //TODO: this node can consider heardFrom to be directly connected to it; do any such logic now.
 
-        //record that we heard from heardFrom just now.
-        gettimeofday(&globalLastHeartbeat[heardFrom], 0);
+        //record that we heard from heardFrom just now. ORIGINAL
+//        gettimeofday(&globalLastHeartbeat[heardFrom], 0);
     }
 
     //Is it a packet from the manager? (see mp2 specification for more details)
@@ -153,7 +210,7 @@ bool notHeardFromSince(short from, short seconds) {
     time_t lastHeardTime;
     time_t delta = curtime - globalLastHeartbeat[from].tv_sec;
 
-    if(delta >= seconds){
+    if (delta >= seconds) {
         return true;
     }
 }
@@ -169,7 +226,7 @@ void updateLastHeardTime(short from) {
     struct timeval tv = getCurrentTime();
     globalLastHeartbeat[from] = tv;
 
-    fprintf(stdout,"Last Heard from %d at this time --> %d\n",from, globalLastHeartbeat[from]);
+    fprintf(stdout, "Last Heard from %d at this time --> %d\n", from, globalLastHeartbeat[from]);
 }
 
 /**
@@ -178,10 +235,16 @@ void updateLastHeardTime(short from) {
  */
 void establishNeighbor(short heardFrom) {
     path myPath = pathsIKnow[heardFrom];
-    myPath.cost = getNeigborCost(heardFrom);
-    myPath.path[0] = globalMyID;
-    myPath.path[1] = heardFrom;
-    myPath.idDestination = heardFrom;
+
+    if (!myPath.alreadyKnow) { //To save having to store same data
+        myPath.cost = getNeigborCost(heardFrom);
+        myPath.path[0] = globalMyID;
+        myPath.path[1] = heardFrom;
+        myPath.idDestination = heardFrom;
+
+        //Used by update thread to know what paths to send updates for
+        idsWithUpdates[heardFrom] = true;
+    }
 }
 
 /**
@@ -191,7 +254,7 @@ void establishNeighbor(short heardFrom) {
  */
 int getNeigborCost(short heardFrom) {
     int cost = 1;
-    if(costs[heardFrom] != NULL){
+    if (costs[heardFrom] != NULL) {
         cost = costs[heardFrom];
     }
 
