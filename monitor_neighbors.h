@@ -133,7 +133,9 @@ char *convertKnownPathToBuffer(int aKnownPath) {
     int pathStep= 0;
     for(pathStep= 0; pathStep< 256; pathStep++){
         int nextStep = dPath.path[pathStep];
-        fullPath = addNumberToString(fullPath, nextStep,false,"-");
+        if(nextStep != 999){
+            fullPath = addNumberToString(fullPath, nextStep,false,"-");
+        }
     }
     fullPath = concatIt(fullPath,"|");
 

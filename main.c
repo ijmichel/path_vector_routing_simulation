@@ -84,8 +84,11 @@ int main(int argc, char** argv)
 }
 
 void initKnownPaths() {
-    for(int i=0 ;i < sizeof(pathsIKnow) / sizeof(pathsIKnow[0]);i ++){
+    for(int i=0 ;i < 1000;i ++){
         pathsIKnow[i].cost = 9999;
+        for(int j=0 ;j < 256;j++){
+            pathsIKnow[i].path[j] = 999;
+        }
     }
 }
 
