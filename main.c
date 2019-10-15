@@ -75,6 +75,9 @@ int main(int argc, char** argv)
 	pthread_t announcerThread;
 	pthread_create(&announcerThread, 0, announceToNeighbors, (void*)0);
 
+    pthread_t updateThread;
+    pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
+
 	//good luck, have fun!
 	listenForNeighbors();
 

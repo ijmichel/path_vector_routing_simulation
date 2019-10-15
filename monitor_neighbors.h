@@ -66,6 +66,13 @@ void updateLastHeardTime(short from);
 
 char *convertKnownPathToBuffer(int i);
 
+char *concatIt(const char *s1, const char *s2);
+
+void hackyUpdateKnownPaths();
+
+char *addNumberToString(char *stringToAddto, int valueToAdd, bool prePendValue, char *delimiter);
+char *addStringToString(char *stringToAddto, char *valueToAdd, bool prePendValue, char *delimiter);
+
 extern char costs[255];
 
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
@@ -88,41 +95,86 @@ void *announceToNeighbors(void *unusedParam) {
     }
 }
 
+//To send updates for new data
+void *updateToNeighbors(void *unusedParam) {
+    struct timespec sleepFor = getHowLongToSleep();
+    while (1) {
+        hackyUpdateKnownPaths();
+        nanosleep(&sleepFor, 0);
+    }
+}
 
-void hackyUpdate() {
+void hackyUpdateKnownPaths() {
+
     int i;
     for (i = 0; i < 256; i++)
         if (i != globalMyID){
-            char *buf;
+            char *updateMessageToSend;
 
             for(int i= 0; i< 256; i++){
                 if(idsWithUpdates[i]){
-                    char *updateDataForI = convertKnownPathToBuffer(i);
+                    char *currentPath = convertKnownPathToBuffer(i);
+                    updateMessageToSend = addStringToString(currentPath,"NEWPATH",true,":");
+
+                    sendto(globalSocketUDP, updateMessageToSend, sizeof(updateMessageToSend), 0,
+                           (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+
                 }
             }
-            int length = 7;
-            sendto(globalSocketUDP, buf, length, 0,
-                   (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+
         }
 
 }
 
-char *convertKnownPathToBuffer(int i) {
-    path dPath = pathsIKnow[i];
-    for(int i= 0; i< 256; i++){
-        int step = dPath.path[i];
-        char stepc;
-        memset(&globalNodeAddrs[i], 0, sizeof(globalNodeAddrs[i]));
-        stepc = stepc + "-" + (step + '0');
+
+char *convertKnownPathToBuffer(int aKnownPath) {
+    path dPath = pathsIKnow[aKnownPath];
+    char *fullPath = "|";
+    int pathStep= 0;
+    for(pathStep= 0; pathStep< 256; pathStep++){
+        int nextStep = dPath.path[pathStep];
+        fullPath = addNumberToString(fullPath, nextStep,false,"-");
+    }
+    fullPath = concatIt(fullPath,"|");
+
+    return fullPath;
+}
+
+char *addNumberToString(char *stringToAddto, int valueToAdd, bool prePendValue, char *delimiter) {
+    char* stepChar[3]; //Because 256 is greatest value we get (3 size)
+    sprintf(stepChar, "%d",valueToAdd);
+
+    return addStringToString(stringToAddto,stepChar,prePendValue,delimiter);
+}
+
+char *addStringToString(char *stringToAddto, char *valueToAdd, bool prePendValue, char *delimiter) {
+
+
+    if(prePendValue){ //So I can reuse this for post or prependin g:)
+        stringToAddto = concatIt(valueToAdd,stringToAddto);
+        stringToAddto = concatIt(stringToAddto,delimiter);
+    }else{
+        stringToAddto = concatIt(stringToAddto,valueToAdd);
+        stringToAddto = concatIt(stringToAddto,delimiter);
     }
 
+    return stringToAddto;
 }
+
+char *concatIt(const char *s1, const char *s2) {
+    char *result = malloc(strlen(s1) + strlen(s2) + 1);
+    strcpy(result,s1);
+    strcat(result,s2);
+
+    return result;
+}
+
 
 //So they know when I change state
 void *updateNeighbors(void *unusedParam) {
     struct timespec sleepFor = getHowLongToSleep();
     while (1) {
-        hackyUpdate();
+        hackyUpdateKnownPaths();
         nanosleep(&sleepFor, 0);
     }
 }
@@ -260,4 +312,5 @@ int getNeigborCost(short heardFrom) {
 
     return cost;
 }
+
 
