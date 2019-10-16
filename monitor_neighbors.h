@@ -15,10 +15,12 @@
 typedef struct {
     int idDestination; //id of node I know how to get to
     int cost; //cost to get there
-    int path[255]; //The [0]th element is the id of the first node in the path
-    bool alreadyKnow;
-    bool disconnected;
+    int path[256]; //The [0]th element is the id of the first node in the path
+    int alreadyKnow;
+    int disconnected;
 } path;
+
+extern bool debug;
 
 static const int SLEEPTIME = 300 * 1000 * 1000; //300 ms
 extern path pathsIKnow[1000];
@@ -64,7 +66,7 @@ void establishNeighbor(short heardFrom);
 
 void updateLastHeardTime(short from);
 
-char *convertKnownPathToBuffer(int i);
+char *convertKnownPathToBuffer(int destinationOfKnownPath);
 
 char *concatIt(const char *s1, const char *s2);
 
@@ -116,9 +118,14 @@ void hackyUpdateKnownPaths() {
                     char *currentPath = convertKnownPathToBuffer(i);
                     updateMessageToSend = addStringToString(currentPath,"NEWPATH",true,":");
 
+                    if(debug){
+                        fprintf(stdout, "Update Neighbors With: |Id:%i|Path:%s\n", i,currentPath);
+                        fprintf(stdout, "Update Neighbors With: |Message:%s|\n", updateMessageToSend);
+                    }
                     sendto(globalSocketUDP, updateMessageToSend, sizeof(updateMessageToSend), 0,
                            (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
 
+                    idsWithUpdates[i] = false;
                 }
             }
 
@@ -127,14 +134,18 @@ void hackyUpdateKnownPaths() {
 }
 
 
-char *convertKnownPathToBuffer(int aKnownPath) {
-    path dPath = pathsIKnow[aKnownPath];
+char *convertKnownPathToBuffer(int destinationOfKnownPath) {
+    path dPath = pathsIKnow[destinationOfKnownPath];
     char *fullPath = "|";
     int pathStep= 0;
     for(pathStep= 0; pathStep< 256; pathStep++){
         int nextStep = dPath.path[pathStep];
         if(nextStep != 999){
-            fullPath = addNumberToString(fullPath, nextStep,false,"-");
+            if(fullPath != "|"){ //So we don't add a - in the begin of path with no number yet
+                fullPath = concatIt(fullPath,"-");
+            }
+
+            fullPath = addNumberToString(fullPath, nextStep,false,NULL);
         }
     }
     fullPath = concatIt(fullPath,"|");
@@ -150,14 +161,15 @@ char *addNumberToString(char *stringToAddto, int valueToAdd, bool prePendValue, 
 }
 
 char *addStringToString(char *stringToAddto, char *valueToAdd, bool prePendValue, char *delimiter) {
-
-
     if(prePendValue){ //So I can reuse this for post or prependin g:)
         stringToAddto = concatIt(valueToAdd,stringToAddto);
-        stringToAddto = concatIt(stringToAddto,delimiter);
+
+        if(delimiter != NULL)
+            stringToAddto = concatIt(stringToAddto,delimiter);
     }else{
         stringToAddto = concatIt(stringToAddto,valueToAdd);
-        stringToAddto = concatIt(stringToAddto,delimiter);
+        if(delimiter != NULL)
+            stringToAddto = concatIt(stringToAddto,delimiter);
     }
 
     return stringToAddto;
@@ -280,7 +292,8 @@ void updateLastHeardTime(short from) {
     struct timeval tv = getCurrentTime();
     globalLastHeartbeat[from] = tv;
 
-    fprintf(stdout, "Last Heard from %d at this time --> %d\n", from, globalLastHeartbeat[from]);
+//    if(debug)
+//        fprintf(stdout, "Last Heard from %d at this time --> %d\n", from, globalLastHeartbeat[from]);
 }
 
 /**
@@ -290,14 +303,21 @@ void updateLastHeardTime(short from) {
 void establishNeighbor(short heardFrom) {
     path myPath = pathsIKnow[heardFrom];
 
-    if (!myPath.alreadyKnow) { //To save having to store same data
+    if (myPath.alreadyKnow == 0) { //Because if we already know the neighbors path then no work needs to occur to update neighbors other than it of its presence
         myPath.cost = getNeigborCost(heardFrom);
         myPath.path[0] = globalMyID;
         myPath.path[1] = heardFrom;
         myPath.idDestination = heardFrom;
+        myPath.alreadyKnow = 1;
+
+        pathsIKnow[heardFrom] = myPath;
 
         //Used by update thread to know what paths to send updates for
         idsWithUpdates[heardFrom] = true;
+
+        if(debug){
+            fprintf(stdout, "New Neighbor |Id:%d|Cost:%d|\n", heardFrom,myPath.cost);
+        }
     }
 }
 
