@@ -16,10 +16,11 @@ struct sockaddr_in globalNodeAddrs[256];
 char costs[255];
 path pathsIKnow[1000];
 bool idsWithUpdates[256];
+bool debug;
 
 int main(int argc, char** argv)
 {
-
+    debug = true;
 	if(argc != 4)
 	{
 		fprintf(stderr, "Usage: %s mynodeid initialcostsfile logfile\n\n", argv[0]);
@@ -85,11 +86,23 @@ int main(int argc, char** argv)
 
 void initKnownPaths() {
     for(int i=0 ;i < 1000;i ++){
-        pathsIKnow[i].cost = 9999;
+        path pathToupdate = pathsIKnow[i];
+        pathToupdate.cost = 9999;
         for(int j=0 ;j < 256;j++){
-            pathsIKnow[i].path[j] = 999;
+            int cPathValue = pathToupdate.path[j];
+            cPathValue = 999;
+            pathToupdate.path[j] = cPathValue;
         }
+
+        pathToupdate.alreadyKnow = 0;
+
+        pathsIKnow[i] = pathToupdate;
+
     }
+
+    if(debug)
+        fprintf(stdout, "Init Complete");
+
 }
 
 /**
