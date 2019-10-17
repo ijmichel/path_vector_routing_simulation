@@ -10,12 +10,12 @@ void readCostsFile(char *const *argv);
 void initKnownPaths();
 
 int globalMyID = 0;
-struct timeval globalLastHeartbeat[256];
+struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
 int globalSocketUDP;
-struct sockaddr_in globalNodeAddrs[256];
-char costs[255];
+struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
+char costs[MAX_NEIGHBOR];
 path pathsIKnow[1000];
-bool idsWithUpdates[256];
+bool idsWithUpdates[MAX_NEIGHBOR];
 bool debug;
 
 int main(int argc, char** argv)
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	//and set up our sockaddr_in's for sending to the other nodes.
 	globalMyID = atoi(argv[1]);
 	int i;
-	for(i=0;i<256;i++)
+	for(i=0;i<MAX_NEIGHBOR;i++)
 	{
 		gettimeofday(&globalLastHeartbeat[i], 0);
 		
@@ -88,7 +88,7 @@ void initKnownPaths() {
     for(int i=0 ;i < 1000;i ++){
         path pathToupdate = pathsIKnow[i];
         pathToupdate.cost = 9999;
-        for(int j=0 ;j < 256;j++){
+        for(int j=0 ;j < MAX_NEIGHBOR;j++){
             int cPathValue = pathToupdate.path[j];
             cPathValue = 999;
             pathToupdate.path[j] = cPathValue;
@@ -99,10 +99,6 @@ void initKnownPaths() {
         pathsIKnow[i] = pathToupdate;
 
     }
-
-    if(debug)
-        fprintf(stdout, "Init Complete");
-
 }
 
 /**
