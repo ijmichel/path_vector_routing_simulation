@@ -248,8 +248,6 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
 }
 
 void processNewPath(const unsigned char *recvBuf,short heardFrom) {
-    if(debug)
-        fprintf(stdout, "NEWPATH Message Received %s\n", recvBuf);
 
     char *tofree;
     int destination;
@@ -260,6 +258,8 @@ void processNewPath(const unsigned char *recvBuf,short heardFrom) {
 
     if(amIInPath(path)==false){//To prevent loops
         addNewPath(heardFrom, destination, cost, path);
+        if(debug)
+            fprintf(stdout, "NEWPATH Message Processed from %d --> %s\n", heardFrom, recvBuf);
     }
 
     free(tofree);
@@ -352,6 +352,7 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path) {
     myPaths.pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
     myPaths.pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
     myPaths.pathsIKnow[currentKnownSize].idDestination = destination;
+    myPaths.pathsIKnow[currentKnownSize].pathSize = i;
     myPaths.hasUpdates = 1;
     myPaths.size = currentKnownSize;
     pathsIKnow[destination] = myPaths;
