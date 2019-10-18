@@ -14,8 +14,7 @@ struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
 int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
-path pathsIKnow[1000];
-bool idsWithUpdates[MAX_NEIGHBOR];
+paths pathsIKnow[MAX_NEIGHBOR];
 bool debug;
 
 int main(int argc, char** argv)
@@ -85,20 +84,32 @@ int main(int argc, char** argv)
 }
 
 void initKnownPaths() {
-    for(int i=0 ;i < 1000;i ++){
-        path pathToupdate = pathsIKnow[i];
-        pathToupdate.cost = 9999;
-        for(int j=0 ;j < MAX_NEIGHBOR;j++){
-            int cPathValue = pathToupdate.path[j];
-            cPathValue = 999;
-            pathToupdate.path[j] = cPathValue;
+    for(int j=0;j<MAX_NEIGHBOR;j++){
+        paths pathsToI = pathsIKnow[j];
+        pathsToI.size = -1;
+        pathsToI.hasUpdates = 0;
+        pathsToI.alreadyProcessedNeighbor = 0;
+
+        for(int i=0 ;i < 1000;i ++){
+            path pathToupdate = pathsToI.pathsIKnow[i];
+            pathToupdate.cost = 9999;
+            for(int j=0 ;j < MAX_NEIGHBOR;j++){
+                int cPathValue = pathToupdate.path[j];
+                cPathValue = 999;
+                pathToupdate.path[j] = cPathValue;
+            }
+
+            pathToupdate.hasUpdates = 0;
+
+            pathsToI.pathsIKnow[i] = pathToupdate;
+            pathsIKnow[j] = pathsToI;
+
         }
 
-        pathToupdate.alreadyKnow = 0;
-
-        pathsIKnow[i] = pathToupdate;
-
     }
+    fprintf(stdout, "Init Complete ");
+
+
 }
 
 /**
