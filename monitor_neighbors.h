@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 enum MAX_NEIGHBOR {MAX_NEIGHBOR = 3};
@@ -34,9 +35,6 @@ struct timeval getCurrentTime();
 extern int globalSocketUDP;
 
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf);
-
-
-
 
 
 /**
@@ -66,17 +64,11 @@ void updateLastHeardTime(short from);
 
 char *convertKnownPathToBuffer(int destinationOfKnownPath);
 
-char *concatIt(const char *s1, const char *s2);
+char* concat(int count, ...);
 
 void hackyUpdateKnownPaths();
 
-char *addNumberToString(char *stringToAddto, int valueToAdd, bool prePendValue, char *delimiter);
-
-char *addStringToString(char *stringToAddto, char *valueToAdd, bool prePendValue, char *delimiter);
-
 bool hasNewPathInfoFor(int i);
-
-char *buildMessage(char *command, int destinationId, char *data);
 
 
 
@@ -109,43 +101,6 @@ void *updateToNeighbors(void *unusedParam) {
     }
 }
 
-void hackyUpdateKnownPaths() {
-
-    int i;
-    for (i = 0; i < MAX_NEIGHBOR; i++)
-        if (i != globalMyID) {
-            char *updateMessageToSend;
-            if (hasNewPathInfoFor(i)) {
-                char *currentPath = convertKnownPathToBuffer(i);
-
-                updateMessageToSend = buildMessage("NEWPATH",i,currentPath);
-
-                for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
-                    if (debug) {
-                        fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, currentPath);
-//                        fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
-                    }
-                    sendto(globalSocketUDP, updateMessageToSend, sizeof(updateMessageToSend), 0,
-                           (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
-
-                }
-                idsWithUpdates[i] = false;
-
-            }
-
-        }
-
-}
-
-char *buildMessage(char *command, int destinationId, char *data) {
-    //|command|destinationId|data|
-    char *builtMessage;
-    builtMessage = addStringToString("|", command, false, "|");
-    builtMessage = addNumberToString(builtMessage, destinationId, false, "|");
-    builtMessage = addStringToString(builtMessage, data, false, "|");
-
-    return builtMessage;
-}
 
 
 bool hasNewPathInfoFor(int i) { return idsWithUpdates[i]; }
@@ -159,43 +114,51 @@ char *convertKnownPathToBuffer(int destinationOfKnownPath) {
         int nextStep = dPath.path[pathStep];
         if (nextStep != 999) {
             if (fullPath != "") { //So we don't add a - in the begin of path with no number yet
-                fullPath = concatIt(fullPath, "-");
+                fullPath = concat(2,fullPath, "-");
             }
-            fullPath = addNumberToString(fullPath, nextStep, false, NULL);
+            char *stepChar[3]; //Because 256 is greatest value we get (3 size)
+            sprintf(stepChar, "%d", nextStep);
+
+            fullPath = concat(2,fullPath, stepChar);
         }
     }
 
     return fullPath;
 }
 
-char *addNumberToString(char *stringToAddto, int valueToAdd, bool prePendValue, char *delimiter) {
-    char *stepChar[3]; //Because 256 is greatest value we get (3 size)
-    sprintf(stepChar, "%d", valueToAdd);
+/**
+ * From : https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c/8465083
+ * @param count
+ * @param ...
+ * @return
+ */
+char* concat(int count, ...)
+{
+    va_list ap;
+    int i;
 
-    return addStringToString(stringToAddto, stepChar, prePendValue, delimiter);
-}
+    // Find required length to store merged string
+    int len = 1; // room for NULL
+    va_start(ap, count);
+    for(i=0 ; i<count ; i++)
+        len += strlen(va_arg(ap, char*));
+    va_end(ap);
 
-char *addStringToString(char *stringToAddto, char *valueToAdd, bool prePendValue, char *delimiter) {
-    if (prePendValue) { //So I can reuse this for post or prependin g:)
-        stringToAddto = concatIt(valueToAdd, stringToAddto);
+    // Allocate memory to concat strings
+    char *merged = calloc(sizeof(char),len);
+    int null_pos = 0;
 
-        if (delimiter != NULL)
-            stringToAddto = concatIt(stringToAddto, delimiter);
-    } else {
-        stringToAddto = concatIt(stringToAddto, valueToAdd);
-        if (delimiter != NULL)
-            stringToAddto = concatIt(stringToAddto, delimiter);
+    // Actually concatenate strings
+    va_start(ap, count);
+    for(i=0 ; i<count ; i++)
+    {
+        char *s = va_arg(ap, char*);
+        strcpy(merged+null_pos, s);
+        null_pos += strlen(s);
     }
+    va_end(ap);
 
-    return stringToAddto;
-}
-
-char *concatIt(const char *s1, const char *s2) {
-    char *result = malloc(strlen(s1) + strlen(s2) + 1);
-    strcpy(result, s1);
-    strcat(result, s2);
-
-    return result;
+    return merged;
 }
 
 
@@ -231,6 +194,39 @@ void listenForNeighbors() {
     }
     //(should never reach here)
     close(globalSocketUDP);
+}
+
+void hackyUpdateKnownPaths() {
+
+    int i;
+    for (i = 0; i < MAX_NEIGHBOR; i++)
+        if (i != globalMyID) {
+            char *updateMessageToSend;
+            if (hasNewPathInfoFor(i)) {
+                char *currentPath = convertKnownPathToBuffer(i);
+
+                //|command|destinationId|data|
+                char *stepChar[3]; //Because 256 is greatest value we get (3 size)
+                sprintf(stepChar, "%d", i);
+
+                updateMessageToSend = concat(7,"|","NEWPATH","|",stepChar,"|",currentPath,"|");
+
+                for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
+                    if (debug) {
+                        fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, currentPath);
+//                        fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
+                    }
+                    sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                           (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
+
+                }
+                idsWithUpdates[i] = false;
+                free(updateMessageToSend);
+
+            }
+
+        }
+
 }
 
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
