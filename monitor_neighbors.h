@@ -13,7 +13,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-enum MAX_NEIGHBOR {MAX_NEIGHBOR = 3};
+enum MAX_NEIGHBOR {MAX_NEIGHBOR = 4};
+enum MAX_NUM_PATHS {MAX_NUM_PATHS = 1000};
 
 typedef struct {
     int idDestination; //id of node I know how to get to
@@ -27,7 +28,7 @@ typedef struct { //So we can store many paths to a destination that we've heard
     int size;
     int hasUpdates;
     int alreadyProcessedNeighbor;
-    path pathsIKnow[1000];
+    path pathsIKnow[MAX_NUM_PATHS];
 } paths;
 
 paths pathsIKnow[MAX_NEIGHBOR];
@@ -203,7 +204,7 @@ void hackyUpdateKnownPaths() {
             char *updateMessageToSend;
             if (pathsIKnow[i].hasUpdates==1) { //If any paths for this destination have updates
 
-                for(int q=0;q<=1000;q++){
+                for(int q=0;q<=MAX_NUM_PATHS;q++){
                     if(pathsIKnow[i].pathsIKnow[q].hasUpdates == 1){
                         path pathWithUpdate = pathsIKnow[i].pathsIKnow[q];
                         char *pathToDestination = convertPath(pathWithUpdate);
