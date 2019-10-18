@@ -77,6 +77,10 @@ char* concat(int count, ...);
 
 void hackyUpdateKnownPaths();
 
+void processNewPath(const unsigned char *recvBuf,short heardFrom);
+
+bool amIInPath(const char *path);
+
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
 //which we can't do in this assignment.
@@ -255,16 +259,7 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
         }
 
         if (!strncmp(recvBuf, "NEWPATH", 7)) {
-            if(debug)
-                fprintf(stdout, "NEWPATH RECEIVED %s\n", recvBuf);
-
-            char *token, *str, *tofree;
-
-            tofree = str = strdup(recvBuf);
-            while ((token = strsep(&str, "|"))) {
-                fprintf(stdout, "PART %s\n", token);
-            }
-            free(tofree);
+            processNewPath(recvBuf,heardFrom);
 
         }
 
@@ -292,6 +287,67 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
 //else if(!strncmp(recvBuf, "your other message types", ))
 // ...
 }
+
+void processNewPath(const unsigned char *recvBuf,short heardFrom) {
+    if(debug)
+        fprintf(stdout, "NEWPATH Message Received %s\n", recvBuf);
+
+    char *token, *str, *tofree;
+    tofree = str = strdup(recvBuf);
+    int argCount = 0;
+    int destination, cost, nextHop;
+    char* path;
+
+    //NEWPATH|destination|path|cost|nextHop
+    while ((token = strsep(&str, "|"))) {
+        if(argCount>=1){ //Ignore the command - we already know it
+            if(argCount==1){//destination
+                destination = atoi(token);
+            }else if(argCount==2){//path
+                path = token;
+            }else if(argCount==3){//cost
+                cost = atoi(token);
+            }else if(argCount==4){//nextHope
+                nextHop = atoi(token);
+            }
+        }
+        argCount++;
+    }
+
+    if(amIInPath(path)==false){
+        char *tokenPath, *strPath, *tofreePath;
+        tofreePath = strPath = strdup(path);
+
+        //    int currentSize = pathsIKnow[destination].size;
+        //    pathsIKnow[destination].pathsIKnow[currentSize+1];
+        while ((tokenPath = strsep(&strPath, "-"))) {
+            int pathStep = atoi(tokenPath);
+
+        }
+
+        free(tofreePath);
+    }
+
+    free(tofree);
+
+}
+
+bool amIInPath(const char *path) {//Stored the details
+    char *tokenPath, *strPath, *tofreePath;
+    tofreePath = strPath = strdup(path);
+    bool amIInPath = false;
+    while ((tokenPath = strsep(&strPath, "-"))) {
+        int pathStep = atoi(tokenPath);
+        if(pathStep==globalMyID){
+            amIInPath=true;
+            break;
+        }
+    }
+
+    free(tofreePath);
+    return amIInPath;
+}
+
 
 /**
  * Because we want to know if destinations can't be reached anymore
