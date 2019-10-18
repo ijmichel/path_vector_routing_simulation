@@ -203,17 +203,20 @@ void hackyUpdateKnownPaths() {
         if (i != globalMyID) {
             char *updateMessageToSend;
             if (hasNewPathInfoFor(i)) {
-                char *currentPath = convertKnownPathToBuffer(i);
+                char *pathToDestination = convertKnownPathToBuffer(i);
 
                 //|command|destinationId|data|
-                char *stepChar[3]; //Because 256 is greatest value we get (3 size)
-                sprintf(stepChar, "%d", i);
+                char *destination[3]; //Because 256 is greatest value we get (3 size)
+                sprintf(destination, "%d", i);
 
-                updateMessageToSend = concat(7,"|","NEWPATH","|",stepChar,"|",currentPath,"|");
+                char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                sprintf(nextHop, "%d", globalMyID);
+
+                updateMessageToSend = concat(7,"NEWPATH","|",destination,"|",pathToDestination,"|",nextHop);
 
                 for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
                     if (debug) {
-                        fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, currentPath);
+                        fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, pathToDestination);
 //                        fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
                     }
                     sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
@@ -240,13 +243,19 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
                 updateLastHeardTime(heardFrom);
                 establishNeighbor(heardFrom);
             }
-        }else{
-            fprintf(stdout, "NEWPATH RECEIVED %s\n", recvBuf);
         }
 
         if (!strncmp(recvBuf, "NEWPATH", 7)) {
             if(debug)
                 fprintf(stdout, "NEWPATH RECEIVED %s\n", recvBuf);
+
+            char *token, *str, *tofree;
+
+            tofree = str = strdup(recvBuf);  // We own str's memory now.
+            while ((token = strsep(&str, "|"))) {
+                fprintf(stdout, "PART %s\n", token);
+            }
+            free(tofree);
 
         }
 
