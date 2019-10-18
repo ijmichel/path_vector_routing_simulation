@@ -209,10 +209,13 @@ void hackyUpdateKnownPaths() {
                 char *destination[3]; //Because 256 is greatest value we get (3 size)
                 sprintf(destination, "%d", i);
 
-                char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                char *nextHop[5]; //Because the next hop will always be me from my neighbor
                 sprintf(nextHop, "%d", globalMyID);
 
-                updateMessageToSend = concat(7,"NEWPATH","|",destination,"|",pathToDestination,"|",nextHop);
+                char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                sprintf(costOfPath,"%d",pathsIKnow[i].cost);
+
+                updateMessageToSend = concat(9,"NEWPATH","|",destination,"|",pathToDestination,"|",costOfPath,"|",nextHop);
 
                 for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
                     if (debug) {
@@ -251,7 +254,7 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
 
             char *token, *str, *tofree;
 
-            tofree = str = strdup(recvBuf);  // We own str's memory now.
+            tofree = str = strdup(recvBuf);
             while ((token = strsep(&str, "|"))) {
                 fprintf(stdout, "PART %s\n", token);
             }
