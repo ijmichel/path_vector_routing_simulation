@@ -19,9 +19,11 @@ enum MAX_NUM_PATHS {MAX_NUM_PATHS = 1000};
 typedef struct {
     int idDestination; //id of node I know how to get to
     int cost; //cost to get there
+    int costBeforeAddingMine;
     int path[MAX_NEIGHBOR]; //The [0]th element is the id of the first node in the path --Used to find loops
     int hasUpdates; //To trigger an update if not alreadyknown
     int nextHop; //In order to know where to go next for this destination
+    int pathSize;
 } path;
 
 typedef struct { //So we can store many paths to a destination that we've heard
@@ -81,6 +83,10 @@ void processNewPath(const unsigned char *recvBuf,short heardFrom);
 
 bool amIInPath(const char *path);
 
+void addNewPath(short heardFrom, int destination, int cost, const char *path);
+
+void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destination, int *cost, char **path);
+
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
 //which we can't do in this assignment.
@@ -111,10 +117,8 @@ void *updateToNeighbors(void *unusedParam) {
 }
 
 char *convertPath(path dPath) {
-//    path dPath = pathsIKnow[destinationOfKnownPath];
     char *fullPath = "";
-    int pathStep = 0;
-    for (pathStep = 0; pathStep < MAX_NEIGHBOR; pathStep++) {
+    for (int pathStep = dPath.pathSize; pathStep >= 0; pathStep--) {
         int nextStep = dPath.path[pathStep];
         if (nextStep != 999) {
             if (fullPath != "") { //So we don't add a - in the begin of path with no number yet
@@ -200,51 +204,6 @@ void listenForNeighbors() {
     close(globalSocketUDP);
 }
 
-void hackyUpdateKnownPaths() {
-
-    int i;
-    for (i = 0; i < MAX_NEIGHBOR; i++)
-        if (i != globalMyID) {
-            char *updateMessageToSend;
-            if (pathsIKnow[i].hasUpdates==1) { //If any paths for this destination have updates
-
-                for(int q=0;q<=MAX_NUM_PATHS;q++){
-                    if(pathsIKnow[i].pathsIKnow[q].hasUpdates == 1){
-                        path pathWithUpdate = pathsIKnow[i].pathsIKnow[q];
-                        char *pathToDestination = convertPath(pathWithUpdate);
-
-                        //|command|destinationId|data|
-                        char *destination[3]; //Because 256 is greatest value we get (3 size)
-                        sprintf(destination, "%d", i);
-
-                        char *nextHop[5]; //Because the next hop will always be me from my neighbor
-                        sprintf(nextHop, "%d", globalMyID);
-
-                        char *costOfPath[5]; //5?  hopefully enough to hold max cost
-                        sprintf(costOfPath,"%d",pathWithUpdate.cost);
-
-                        updateMessageToSend = concat(9,"NEWPATH","|",destination,"|",pathToDestination,"|",costOfPath,"|",nextHop);
-
-                        for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
-                            if (debug) {
-                                fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, pathToDestination);
-                                //fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
-                            }
-                            sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
-                                   (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
-
-                        }
-                        free(updateMessageToSend);
-                        pathsIKnow[i].pathsIKnow[q].hasUpdates = 0;
-                    }
-                }
-                pathsIKnow[i].hasUpdates=0; //so we don't send updates again
-            }
-
-        }
-
-}
-
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
     short int heardFrom = -1;
     if (strstr(fromAddr, "10.1.1.")) {
@@ -292,47 +251,152 @@ void processNewPath(const unsigned char *recvBuf,short heardFrom) {
     if(debug)
         fprintf(stdout, "NEWPATH Message Received %s\n", recvBuf);
 
-    char *token, *str, *tofree;
-    tofree = str = strdup(recvBuf);
-    int argCount = 0;
-    int destination, cost, nextHop;
-    char* path;
+    char *tofree;
+    int destination;
+    int cost;
+    char *path;
 
-    //NEWPATH|destination|path|cost|nextHop
-    while ((token = strsep(&str, "|"))) {
-        if(argCount>=1){ //Ignore the command - we already know it
-            if(argCount==1){//destination
-                destination = atoi(token);
-            }else if(argCount==2){//path
-                path = token;
-            }else if(argCount==3){//cost
-                cost = atoi(token);
-            }else if(argCount==4){//nextHope
-                nextHop = atoi(token);
-            }
-        }
-        argCount++;
-    }
+    extractNewPathData(recvBuf, &tofree, &destination, &cost, &path);
 
-    if(amIInPath(path)==false){
-        char *tokenPath, *strPath, *tofreePath;
-        tofreePath = strPath = strdup(path);
-
-        //    int currentSize = pathsIKnow[destination].size;
-        //    pathsIKnow[destination].pathsIKnow[currentSize+1];
-        while ((tokenPath = strsep(&strPath, "-"))) {
-            int pathStep = atoi(tokenPath);
-
-        }
-
-        free(tofreePath);
+    if(amIInPath(path)==false){//To prevent loops
+        addNewPath(heardFrom, destination, cost, path);
     }
 
     free(tofree);
 
 }
 
-bool amIInPath(const char *path) {//Stored the details
+void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destination, int *cost, char **path) {
+    char *token, *str;
+    (*tofree) = str = strdup(recvBuf);
+    int argCount = 0;
+    int   nextHop;//NEWPATH|destination|path|cost|nextHop
+    while ((token = strsep(&str, "|"))) {
+        if(argCount>=1){ //Ignore the command - we already know it
+            if(argCount==1){//destination
+                (*destination) = atoi(token);
+            }else if(argCount==2){//path
+                (*path) = token;
+            }else if(argCount==3){//cost
+                (*cost) = atoi(token);
+            }else if(argCount==4){//nextHope
+                nextHop = atoi(token);
+            }
+        }
+        argCount++;
+    }
+}
+
+void hackyUpdateKnownPaths() {
+
+    int i;
+    for (i = 0; i < MAX_NEIGHBOR; i++)
+        if (i != globalMyID) {
+            char *updateMessageToSend;
+            if (pathsIKnow[i].hasUpdates==1) { //If any paths for this destination have updates
+
+                for(int q=0;q<=MAX_NUM_PATHS;q++){
+                    if(pathsIKnow[i].pathsIKnow[q].hasUpdates == 1){
+                        path pathWithUpdate = pathsIKnow[i].pathsIKnow[q];
+                        char *pathToDestination = convertPath(pathWithUpdate);
+
+                        //|command|destinationId|data|
+                        char *destination[3]; //Because 256 is greatest value we get (3 size)
+                        sprintf(destination, "%d", i);
+
+                        char *nextHop[5]; //Because the next hop will always be me from my neighbor
+                        sprintf(nextHop, "%d", globalMyID);
+
+                        char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                        sprintf(costOfPath,"%d",pathWithUpdate.cost);
+
+                        updateMessageToSend = concat(9,"NEWPATH","|",destination,"|",pathToDestination,"|",costOfPath,"|",nextHop);
+
+                        for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
+                            if (debug) {
+                                fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, pathToDestination);
+                                //fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
+                            }
+                            sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                                   (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
+
+                        }
+                        free(updateMessageToSend);
+                        pathsIKnow[i].pathsIKnow[q].hasUpdates = 0;
+                    }
+                }
+                pathsIKnow[i].hasUpdates=0; //so we don't send updates again
+            }
+
+        }
+
+}
+
+void addNewPath(short heardFrom, int destination, int cost, const char *path) {
+    char *tokenPath, *strPath, *tofreePath;
+    tofreePath = strPath = strdup(path);
+
+    paths myPaths = pathsIKnow[destination];
+    int currentKnownSize = myPaths.size;
+    currentKnownSize++;
+
+    int i = 0;
+    while ((tokenPath = strsep(&strPath, "-"))) {
+        int pathStep = atoi(tokenPath);
+        myPaths.pathsIKnow[currentKnownSize].path[i++] = pathStep;
+    }
+
+    myPaths.pathsIKnow[currentKnownSize].path[i] = globalMyID;
+    myPaths.pathsIKnow[currentKnownSize].hasUpdates = 1;
+    myPaths.pathsIKnow[currentKnownSize].nextHop = heardFrom;
+    myPaths.pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
+    myPaths.pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
+    myPaths.pathsIKnow[currentKnownSize].idDestination = destination;
+    myPaths.hasUpdates = 1;
+    myPaths.size = currentKnownSize;
+    pathsIKnow[destination] = myPaths;
+
+    free(tofreePath);
+}
+
+/**
+ * Because a neighbor announcing itself means 1 known path with current cost value
+ * @param heardFrom
+ */
+void establishNeighbor(short heardFrom) {
+    paths myPath = pathsIKnow[heardFrom];
+
+    if(myPath.alreadyProcessedNeighbor == 0){
+        int currentKnownSize = myPath.size;
+        path newPath = myPath.pathsIKnow[++currentKnownSize];
+        myPath.size = currentKnownSize;
+
+        newPath.cost = getNeigborCost(heardFrom);
+        newPath.path[0] = globalMyID;
+        newPath.path[1] = heardFrom;
+        newPath.pathSize = 2;
+        newPath.idDestination = heardFrom;
+        newPath.hasUpdates = 1;
+        newPath.nextHop = heardFrom;
+
+        myPath.pathsIKnow[currentKnownSize+1] = newPath;
+
+        myPath.hasUpdates = 1; //To trigger a flood to neighbors of new paths for this destination
+
+        pathsIKnow[heardFrom] = myPath;
+
+        if (debug) {
+            fprintf(stdout, "New Neighbor |Id:%d|Cost:%d|\n", heardFrom, newPath.cost);
+        }
+
+        myPath.alreadyProcessedNeighbor = 1;
+
+        pathsIKnow[heardFrom] = myPath;
+    }
+
+}
+
+bool amIInPath(const char *path) {
     char *tokenPath, *strPath, *tofreePath;
     tofreePath = strPath = strdup(path);
     bool amIInPath = false;
@@ -385,41 +449,7 @@ void updateLastHeardTime(short from) {
 //        fprintf(stdout, "Last Heard from %d at this time --> %d\n", from, globalLastHeartbeat[from]);
 }
 
-/**
- * Because a neighbor announcing itself means 1 known path with current cost value
- * @param heardFrom
- */
-void establishNeighbor(short heardFrom) {
-    paths myPath = pathsIKnow[heardFrom];
 
-    if(myPath.alreadyProcessedNeighbor == 0){
-        int currentKnownSize = myPath.size;
-        path newPath = myPath.pathsIKnow[++currentKnownSize];
-        myPath.size = currentKnownSize;
-
-        newPath.cost = getNeigborCost(heardFrom);
-        newPath.path[0] = globalMyID;
-        newPath.path[1] = heardFrom;
-        newPath.idDestination = heardFrom;
-        newPath.hasUpdates = 1;
-        newPath.nextHop = heardFrom;
-
-        myPath.pathsIKnow[currentKnownSize+1] = newPath;
-
-        myPath.hasUpdates = 1; //To trigger a flood to neighbors of new paths for this destination
-
-        pathsIKnow[heardFrom] = myPath;
-
-        if (debug) {
-            fprintf(stdout, "New Neighbor |Id:%d|Cost:%d|\n", heardFrom, newPath.cost);
-        }
-
-        myPath.alreadyProcessedNeighbor = 1;
-
-        pathsIKnow[heardFrom] = myPath;
-    }
-
-}
 
 /**
  * So we can add it to the path
