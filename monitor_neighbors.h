@@ -16,8 +16,9 @@ enum MAX_NEIGHBOR {MAX_NEIGHBOR = 3};
 typedef struct {
     int idDestination; //id of node I know how to get to
     int cost; //cost to get there
-    int path[MAX_NEIGHBOR]; //The [0]th element is the id of the first node in the path
+    int path[MAX_NEIGHBOR]; //The [0]th element is the id of the first node in the path --Used to find loops
     int alreadyKnow; //To trigger an update if not alreadyknown
+    int nextHop; //In order to know where to go next for this destination
 } path;
 
 extern struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
@@ -33,6 +34,10 @@ struct timeval getCurrentTime();
 extern int globalSocketUDP;
 
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf);
+
+
+
+
 
 /**
  * Convience method to get current time
@@ -133,6 +138,7 @@ void hackyUpdateKnownPaths() {
 }
 
 char *buildMessage(char *command, int destinationId, char *data) {
+    //|command|destinationId|data|
     char *builtMessage;
     builtMessage = addStringToString("|", command, false, "|");
     builtMessage = addNumberToString(builtMessage, destinationId, false, "|");
@@ -238,9 +244,13 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
                 updateLastHeardTime(heardFrom);
                 establishNeighbor(heardFrom);
             }
+        }else{
+            fprintf(stdout, "NEWPATH RECEIVED %s\n", recvBuf);
         }
 
-        if (!strncmp(recvBuf, "UPDATE", 7)) {
+        if (!strncmp(recvBuf, "NEWPATH", 7)) {
+            if(debug)
+                fprintf(stdout, "NEWPATH RECEIVED %s\n", recvBuf);
 
         }
 
