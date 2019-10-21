@@ -16,6 +16,7 @@ struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
 bool debug;
+FILE * myLogfile;
 
 int main(int argc, char** argv)
 {
@@ -43,7 +44,9 @@ int main(int argc, char** argv)
 		inet_pton(AF_INET, tempaddr, &globalNodeAddrs[i].sin_addr);
 	}
 
-    fprintf(stdout,"Boot up! --> %d \n", globalMyID);
+	if(debug){
+	    fprintf(stdout,"Boot up! --> %d \n", globalMyID);
+	}
 	
 	
 	//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.
@@ -69,9 +72,15 @@ int main(int argc, char** argv)
 		close(globalSocketUDP);
 		exit(1);
 	}
-	
-	
-	//start threads... feel free to add your own, and to remove the provided ones.
+
+	char* logFileName = argv[3];
+    myLogfile = fopen(logFileName, "ab+");
+    if(myLogfile == NULL)
+    {
+        fprintf(stdout,"Unable to Create Log File! --> %s \n", logFileName);
+        exit(EXIT_FAILURE);
+    }
+
 	pthread_t announcerThread;
 	pthread_create(&announcerThread, 0, announceToNeighbors, (void*)0);
 

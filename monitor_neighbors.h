@@ -44,8 +44,9 @@ static const int SLEEPTIME = 300 * 1000 * 1000; //300 ms
 extern int globalMyID;
 struct timeval getCurrentTime();
 extern int globalSocketUDP;
+extern FILE * myLogfile;
 
-void doWithMessage(const char *fromAddr, const unsigned char *recvBuf);
+void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int i);
 
 
 /**
@@ -86,6 +87,8 @@ bool amIInPath(const char *path);
 void addNewPath(short heardFrom, int destination, int cost, const char *path);
 
 void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destination, int *cost, char **path);
+
+int getNextHop(short destId);
 
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
@@ -197,14 +200,14 @@ void listenForNeighbors() {
 
         inet_ntop(AF_INET, &theirAddr.sin_addr, fromAddr, 100);
 
-        doWithMessage(fromAddr, recvBuf);
+        doWithMessage(fromAddr, recvBuf, bytesRecvd);
 
     }
     //(should never reach here)
     close(globalSocketUDP);
 }
 
-void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
+void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytesRecvd) {
     short int heardFrom = -1;
     if (strstr(fromAddr, "10.1.1.")) {
         heardFrom = atoi(
@@ -231,9 +234,28 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
     //Is it a packet from the manager? (see mp2 specification for more details)
     //send format: 'send'<4 ASCII bytes>, destID<net order 2 byte signed>, <some ASCII message>
     if (!strncmp(recvBuf, "send", 4)) {
+        short int destId = ntohs(*((short int *)(recvBuf+4)));
+        char *message = recvBuf + 6;
 
-        //TODO send the requested message to the requested destination node
-        // ...
+        if(debug) {
+            fprintf(stdout, "[Message:%s][Destination:%d][Size:%d]\n", message, destId, bytesRecvd);
+        }
+        char logLine[100];
+        if(destId != globalMyID){//forward the packet to least cost nextHop
+            int nextHop = getNextHop(destId);
+
+            if(nextHop != -1){
+                sprintf(logLine, "sending packet dest %d nexthop %d message %s\n", destId, nextHop, message);
+            }else{
+                sprintf(logLine, "unreachable dest %d\n", destId);
+            }
+
+        }else{
+            sprintf(logLine, "receive packet message %s\n", message);
+        }
+        fwrite(logLine, 1, strlen(logLine), myLogfile);
+        fflush(myLogfile);
+
     }
         //'cost'<4 ASCII bytes>, destID<net order 2 byte signed> newCost<net order 4 byte signed>
     else if (!strncmp(recvBuf, "cost", 4)) {
@@ -245,6 +267,26 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf) {
     //TODO now check for the various types of packets you use in your own protocol
 //else if(!strncmp(recvBuf, "your other message types", ))
 // ...
+}
+
+/**
+ * Is it really this simple?
+ * @param destId
+ * @return
+ */
+int getNextHop(short destId) {
+    int nextHop = -1;
+    if(pathsIKnow[destId].size != -1){
+        int leastCost = 99999;
+        for(int i=0;i<MAX_NUM_PATHS;i++){
+            int currCost = pathsIKnow[destId].pathsIKnow[i].cost;
+            if(currCost<leastCost){//just take least cost path I know
+                leastCost = currCost;
+                nextHop = pathsIKnow[destId].pathsIKnow[i].nextHop;
+            }
+        }
+    }
+    return nextHop;
 }
 
 void processNewPath(const unsigned char *recvBuf,short heardFrom) {
@@ -304,7 +346,7 @@ void hackyUpdateKnownPaths() {
                         char *destination[3]; //Because 256 is greatest value we get (3 size)
                         sprintf(destination, "%d", i);
 
-                        char *nextHop[5]; //Because the next hop will always be me from my neighbor
+                        char *nextHop[3]; //Because the next hop will always be me from my neighbor
                         sprintf(nextHop, "%d", globalMyID);
 
                         char *costOfPath[5]; //5?  hopefully enough to hold max cost
