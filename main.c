@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 	}
 
 	char* logFileName = argv[3];
-    myLogfile = fopen(logFileName, "ab+");
+    myLogfile = fopen(logFileName, "w+");
     if(myLogfile == NULL)
     {
         fprintf(stdout,"Unable to Create Log File! --> %s \n", logFileName);
