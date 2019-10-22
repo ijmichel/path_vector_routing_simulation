@@ -191,6 +191,7 @@ void listenForNeighbors() {
 
     int bytesRecvd;
     while (1) {
+        memset(recvBuf, 0, 1000);
         theirAddrLen = sizeof(theirAddr);
         if ((bytesRecvd = recvfrom(globalSocketUDP, recvBuf, 1000, 0,
                                    (struct sockaddr *) &theirAddr, &theirAddrLen)) == -1) {
@@ -209,7 +210,7 @@ void listenForNeighbors() {
 
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytesRecvd) {
     short int heardFrom = -1;
-    if (strstr(fromAddr, "10.1.1.")) {
+//    if (strstr(fromAddr, "10.1.1.")) {
         heardFrom = atoi(
                 strchr(strchr(strchr(fromAddr, '.') + 1, '.') + 1, '.') + 1);
 
@@ -218,47 +219,45 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 updateLastHeardTime(heardFrom);
                 establishNeighbor(heardFrom);
             }
-        }
-
-        if (!strncmp(recvBuf, "NEWPATH", 7)) {
+        }else if (!strncmp(recvBuf, "NEWPATH", 7)) {
             processNewPath(recvBuf,heardFrom);
+        }else if (!strncmp(recvBuf, "send", 4)  || !strncmp(recvBuf, "frwd", 4)) {
+            short int destId = ntohs(*((short int *)(recvBuf+4)));
 
-        }
-
-        //TODO: this node can consider heardFrom to be directly connected to it; do any such logic now.
-
-        //record that we heard from heardFrom just now. ORIGINAL
-//        gettimeofday(&globalLastHeartbeat[heardFrom], 0);
-    }
-
-    //Is it a packet from the manager? (see mp2 specification for more details)
-    //send format: 'send'<4 ASCII bytes>, destID<net order 2 byte signed>, <some ASCII message>
-    if (!strncmp(recvBuf, "send", 4)) {
-        short int destId = ntohs(*((short int *)(recvBuf+4)));
-        char *message = recvBuf + 6;
-
-        if(debug) {
-            fprintf(stdout, "[Message:%s][Destination:%d][Size:%d]\n", message, destId, bytesRecvd);
-        }
-        char logLine[100];
-        if(destId != globalMyID){//forward the packet to least cost nextHop
-            int nextHop = getNextHop(destId);
-
-            if(nextHop != -1){
-                sprintf(logLine, "sending packet dest %d nexthop %d message %s\n", destId, nextHop, message);
-            }else{
-                sprintf(logLine, "unreachable dest %d\n", destId);
+            if(debug) {
+                fprintf(stdout, "[Message:%s][Destination:%d][Size:%d]\n", &recvBuf[6], destId, bytesRecvd);
             }
+            char logLine[1000];
+            char fullMessage[1000];
+            memcpy(fullMessage, recvBuf + 6, 100);
 
-        }else{
-            sprintf(logLine, "receive packet message %s\n", message);
-        }
-        fwrite(logLine, 1, strlen(logLine), myLogfile);
-        fflush(myLogfile);
+            if(destId != globalMyID){//forward the packet to least cost nextHop
+                int nextHop = getNextHop(destId);
 
-    }
-        //'cost'<4 ASCII bytes>, destID<net order 2 byte signed> newCost<net order 4 byte signed>
-    else if (!strncmp(recvBuf, "cost", 4)) {
+                if(nextHop != -1){
+
+
+                    if(!strncmp(recvBuf, "send", 4) ){
+                        sprintf(logLine, "sending packet dest %d nexthop %d message %s\n", destId, nextHop, fullMessage);
+                        strncpy((char*)recvBuf,"frwd", 4); //forwarding it along
+                        sendto(globalSocketUDP, recvBuf, bytesRecvd, 0,
+                               (struct sockaddr*)&globalNodeAddrs[nextHop], sizeof(globalNodeAddrs[nextHop]));
+                    }else{
+                        sprintf(logLine, "forward packet dest %d nexthop %d message %s\n", destId, nextHop,fullMessage);
+                        sendto(globalSocketUDP, recvBuf, bytesRecvd, 0,
+                               (struct sockaddr*)&globalNodeAddrs[nextHop], sizeof(globalNodeAddrs[nextHop]));
+                    }
+
+                }else{
+                    sprintf(logLine, "unreachable dest %d\n", destId);
+                }
+
+            }else{
+                sprintf(logLine, "receive packet message %s\n", fullMessage);
+            }
+            fwrite(logLine, 1, strlen(logLine), myLogfile);
+            fflush(myLogfile);
+        }else if (!strncmp(recvBuf, "cost", 4)) {
         //TODO record the cost change (remember, the link might currently be down! in that case,
         //this is the new cost you should treat it as having once it comes back up.)
         // ...
