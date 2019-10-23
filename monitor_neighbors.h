@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 enum MAX_NEIGHBOR {MAX_NEIGHBOR = 4};
-enum MAX_NUM_PATHS {MAX_NUM_PATHS = 1000};
+enum MAX_NUM_PATHS {MAX_NUM_PATHS = 100};
 
 typedef struct {
     int idDestination; //id of node I know how to get to
@@ -30,6 +30,7 @@ typedef struct { //So we can store many paths to a destination that we've heard
     int size;
     int hasUpdates;
     int alreadyProcessedNeighbor;
+    int needsMyPaths;
     path pathsIKnow[MAX_NUM_PATHS];
 } paths;
 
@@ -118,6 +119,58 @@ void *updateToNeighbors(void *unusedParam) {
         nanosleep(&sleepFor, 0);
     }
 }
+
+//To send updates for new data
+void *shareMyPathsToNeighbors(void *unusedParam) {
+    struct timespec sleepFor = getHowLongToSleep();
+    while (1) {
+        for (int i= 0; i < MAX_NEIGHBOR; i++){
+            if (i != globalMyID) {
+                if(pathsIKnow[i].needsMyPaths==1){
+                    for (int k = 0; k < MAX_NEIGHBOR; k++){
+                        if (k != globalMyID && k != i) {
+                            if (pathsIKnow[k].size != -1) {
+                                for (int p = 0; p <= pathsIKnow[k].size; p++) {
+                                    path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
+                                    char *pathToDestination = convertPath(pathWithUpdate);
+
+                                    //|command|destinationId|data|
+                                    char *destination[3]; //Because 256 is greatest value we get (3 size)
+                                    sprintf(destination, "%d", pathWithUpdate.idDestination);
+
+                                    char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                                    sprintf(nextHop, "%d", globalMyID);
+
+                                    char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                                    sprintf(costOfPath, "%d", pathWithUpdate.cost);
+
+                                    char *updateMessageToSend = concat(9, "NEWPATH", "|", destination, "|",
+                                                                       pathToDestination, "|", costOfPath, "|",
+                                                                       nextHop);
+
+                                    if (debug) {
+                                        fprintf(stdout,
+                                                "Update Circlular Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",
+                                                k, i, pathToDestination);
+                                        //fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
+                                    }
+                                    sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                                           (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+
+                                    free(updateMessageToSend);
+                                }
+                            }
+                        }
+                    }
+                    pathsIKnow[i].needsMyPaths=0;
+                }
+            }
+        }
+        nanosleep(&sleepFor, 0);
+    }
+}
+
+
 
 char *convertPath(path dPath) {
     char *fullPath = "";
@@ -421,17 +474,16 @@ void establishNeighbor(short heardFrom) {
         newPath.hasUpdates = 1;
         newPath.nextHop = heardFrom;
 
-        myPath.pathsIKnow[currentKnownSize+1] = newPath;
+        myPath.pathsIKnow[currentKnownSize] = newPath;
 
         myPath.hasUpdates = 1; //To trigger a flood to neighbors of new paths for this destination
-
-        pathsIKnow[heardFrom] = myPath;
 
         if (debug) {
             fprintf(stdout, "New Neighbor |Id:%d|Cost:%d|\n", heardFrom, newPath.cost);
         }
 
         myPath.alreadyProcessedNeighbor = 1;
+        myPath.needsMyPaths = 1;
 
         pathsIKnow[heardFrom] = myPath;
     }

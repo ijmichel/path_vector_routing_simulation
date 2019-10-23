@@ -79,6 +79,8 @@ int main(int argc, char** argv)
     {
         fprintf(stdout,"Unable to Create Log File! --> %s \n", logFileName);
         exit(EXIT_FAILURE);
+    }else{
+        fprintf(stdout,"Created Log File! --> %s \n", logFileName);
     }
 
 	pthread_t announcerThread;
@@ -86,6 +88,9 @@ int main(int argc, char** argv)
 
     pthread_t updateThread;
     pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
+
+    pthread_t sharingThread;
+    pthread_create(&sharingThread, 0, shareMyPathsToNeighbors, (void*)0);
 
 	//good luck, have fun!
 	listenForNeighbors();
@@ -98,8 +103,9 @@ void initKnownPaths() {
         pathsToI.size = -1;
         pathsToI.hasUpdates = 0;
         pathsToI.alreadyProcessedNeighbor = 0;
+        pathsToI.needsMyPaths = 0;
 
-        for(int i=0 ;i < 1000;i ++){
+        for(int i=0 ;i < MAX_NUM_PATHS;i ++){
             path pathToupdate = pathsToI.pathsIKnow[i];
             pathToupdate.cost = 9999;
             for(int j=0 ;j < MAX_NEIGHBOR;j++){
