@@ -15,6 +15,7 @@
 
 enum MAX_NEIGHBOR {MAX_NEIGHBOR = 4};
 enum MAX_NUM_PATHS {MAX_NUM_PATHS = 100};
+enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 3}; //seconds
 
 typedef struct {
     int idDestination; //id of node I know how to get to
@@ -30,6 +31,7 @@ typedef struct { //So we can store many paths to a destination that we've heard
     int size;
     int hasUpdates;
     int alreadyProcessedNeighbor;
+    int isMyNeighbor;
     int needsMyPaths;
     path pathsIKnow[MAX_NUM_PATHS];
 } paths;
@@ -42,6 +44,7 @@ extern char costs[MAX_NEIGHBOR];
 
 extern bool debug;
 static const int SLEEPTIME = 300 * 1000 * 1000; //300 ms
+static const int SLEEPTIME_DISCONNECT = 300 * 1000 * 1000 * 3; //900 ms
 extern int globalMyID;
 struct timeval getCurrentTime();
 extern int globalSocketUDP;
@@ -71,6 +74,13 @@ struct timespec getHowLongToSleep() {
     return sleepFor;
 }
 
+struct timespec getHowLongToSleepForDisconnect() {
+    struct timespec sleepFor;
+    sleepFor.tv_sec = 0;
+    sleepFor.tv_nsec = SLEEPTIME_DISCONNECT;
+    return sleepFor;
+}
+
 void establishNeighbor(short heardFrom);
 
 void updateLastHeardTime(short from);
@@ -89,7 +99,11 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path);
 
 void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destination, int *cost, char **path);
 
+bool notHeardFromSince(short from, short seconds);
+
 int getNextHop(short destId);
+
+void resetPath(short disconnectId, int i);
 
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
@@ -120,17 +134,54 @@ void *updateToNeighbors(void *unusedParam) {
     }
 }
 
+//Any disconnects communicate it to neighbors
+void *processDisconnects(void *unusedParam) {
+    struct timespec sleepFor = getHowLongToSleepForDisconnect();
+    while (1) {
+        for (int i= 0; i < MAX_NEIGHBOR; i++){
+            if(notHeardFromSince(i,NOT_HEARD_FROM_SINCE) && i != globalMyID && pathsIKnow[i].isMyNeighbor == 1){
+                short int no_destID = htons((short)i);
+                int msgLen = 4+sizeof(short int);
+                char* sendBuf = malloc(msgLen);
+                strcpy(sendBuf, "dscn");
+                memcpy(sendBuf+4, &no_destID, sizeof(short int));
+
+                for (int j= 0; j < MAX_NEIGHBOR; j++) {
+
+                    if( j != i && j != globalMyID){
+                        if(debug)
+                            fprintf(stdout, "Neighbor Disconnect [%d] Telling my Neighbors \n",i);
+                        sendto(globalSocketUDP, sendBuf, msgLen, 0, (struct sockaddr*)&globalNodeAddrs[j], sizeof(globalNodeAddrs[j]));
+                    }
+                }
+                free(sendBuf);
+                pathsIKnow[i].isMyNeighbor = 0;
+                pathsIKnow[i].alreadyProcessedNeighbor = 0;
+                int numRemoved = 0;
+                for (int k = 0 ; k<= pathsIKnow[i].size;k++) {
+                    if (pathsIKnow[i].pathsIKnow[k].nextHop == i) {
+                        resetPath(i, k);
+                    }
+                    numRemoved++;
+                }
+                pathsIKnow[i].size = pathsIKnow[i].size - numRemoved;
+            }
+        }
+        nanosleep(&sleepFor, 0);
+    }
+}
+
 //To send updates for new data
 void *shareMyPathsToNeighbors(void *unusedParam) {
     struct timespec sleepFor = getHowLongToSleep();
     while (1) {
         for (int i= 0; i < MAX_NEIGHBOR; i++){
             if (i != globalMyID) {
-                if(pathsIKnow[i].needsMyPaths==1){
-                    for (int k = 0; k < MAX_NEIGHBOR; k++){
-                        if (k != globalMyID && k != i) {
-                            if (pathsIKnow[k].size != -1) {
-                                for (int p = 0; p <= pathsIKnow[k].size; p++) {
+                if(pathsIKnow[i].needsMyPaths==1){ //Because new neighbors need to know ALL my paths I know
+                    for (int k = 0; k < MAX_NEIGHBOR; k++){ //go through all my destinations
+                        if (k != globalMyID && k != i) { //Don't send them my path or their own path
+                            if (pathsIKnow[k].size != -1) { //If I actually have paths to them
+                                for (int p = 0; p <= pathsIKnow[k].size; p++) { //go through them and send
                                     path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
                                     char *pathToDestination = convertPath(pathWithUpdate);
 
@@ -147,12 +198,10 @@ void *shareMyPathsToNeighbors(void *unusedParam) {
                                     char *updateMessageToSend = concat(9, "NEWPATH", "|", destination, "|",
                                                                        pathToDestination, "|", costOfPath, "|",
                                                                        nextHop);
-
                                     if (debug) {
                                         fprintf(stdout,
-                                                "Update Circlular Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",
-                                                k, i, pathToDestination);
-                                        //fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
+                                                "Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s]\n",
+                                                i, k, pathToDestination);
                                     }
                                     sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
                                            (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
@@ -314,11 +363,48 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
         //TODO record the cost change (remember, the link might currently be down! in that case,
         //this is the new cost you should treat it as having once it comes back up.)
         // ...
-    }
+        }else if(!strncmp(recvBuf,"dscn",4)){
+            short int disconnectId = ntohs(*((short int *)(recvBuf+4)));
+            if(pathsIKnow[disconnectId].size >= 0){
+                int numRemoved = 0;
+                for (int i = 0 ; i<= pathsIKnow[disconnectId].size;i++){
+                    if(pathsIKnow[disconnectId].pathsIKnow[i].nextHop == heardFrom){
+                        if(debug)
+                            fprintf(stdout, "Removing my [%d] path to [%d] with nextHop %d\n",i,disconnectId, heardFrom);
+                        resetPath(disconnectId, i); //record it
+                        numRemoved++;
+                        for(int j=0 ;j < MAX_NEIGHBOR;j++){ //send it along!
+                            if(j != heardFrom && j != globalMyID){
+                                sendto(globalSocketUDP, recvBuf, bytesRecvd, 0,
+                                       (struct sockaddr *) &globalNodeAddrs[j], sizeof(globalNodeAddrs[j]));
+                            }
+                        }
+                    }
+                }
+                pathsIKnow[disconnectId].size = pathsIKnow[disconnectId].size - numRemoved;
+            }
+        }
 
     //TODO now check for the various types of packets you use in your own protocol
 //else if(!strncmp(recvBuf, "your other message types", ))
 // ...
+}
+
+void resetPath(short disconnectId, int i) {
+    path pathToupdate = pathsIKnow[disconnectId].pathsIKnow[i];
+    pathToupdate.cost = 9999;
+    pathToupdate.hasUpdates = 0;
+    pathToupdate.idDestination = 999;
+    pathToupdate.cost = 999;
+    pathToupdate.costBeforeAddingMine = 999;
+    pathToupdate.nextHop = 999;
+    pathToupdate.pathSize = 999;
+    for(int j=0 ;j < MAX_NEIGHBOR;j++){
+        int cPathValue = pathToupdate.path[j];
+        cPathValue = 999;
+        pathToupdate.path[j] = cPathValue;
+    }
+    pathsIKnow[disconnectId].pathsIKnow[i] = pathToupdate;
 }
 
 /**
@@ -483,6 +569,7 @@ void establishNeighbor(short heardFrom) {
         }
 
         myPath.alreadyProcessedNeighbor = 1;
+        myPath.isMyNeighbor = 1;
         myPath.needsMyPaths = 1;
 
         pathsIKnow[heardFrom] = myPath;
@@ -523,8 +610,15 @@ bool notHeardFromSince(short from, short seconds) {
     time_t lastHeardTime;
     time_t delta = curtime - globalLastHeartbeat[from].tv_sec;
 
-    if (delta >= seconds) {
+    if (debug) {
+//        if(pathsIKnow[from].isMyNeighbor == 1)
+//            fprintf(stdout, "Last Heard From |Id:%d|Seconds Ago:%d|\n", from, delta);
+    }
+
+    if (delta >= seconds  && pathsIKnow[from].isMyNeighbor == 1) {
         return true;
+    }else{
+        return false;
     }
 }
 

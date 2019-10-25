@@ -26,8 +26,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Usage: %s mynodeid initialcostsfile logfile\n\n", argv[0]);
 		exit(1);
 	}
-	
-	
+
 	//initialization: get this process's node ID, record what time it is, 
 	//and set up our sockaddr_in's for sending to the other nodes.
 	globalMyID = atoi(argv[1]);
@@ -92,6 +91,9 @@ int main(int argc, char** argv)
     pthread_t sharingThread;
     pthread_create(&sharingThread, 0, shareMyPathsToNeighbors, (void*)0);
 
+    pthread_t disconnectThread;
+    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
+
 	//good luck, have fun!
 	listenForNeighbors();
 
@@ -103,6 +105,7 @@ void initKnownPaths() {
         pathsToI.size = -1;
         pathsToI.hasUpdates = 0;
         pathsToI.alreadyProcessedNeighbor = 0;
+        pathsToI.isMyNeighbor = 0;
         pathsToI.needsMyPaths = 0;
 
         for(int i=0 ;i < MAX_NUM_PATHS;i ++){
