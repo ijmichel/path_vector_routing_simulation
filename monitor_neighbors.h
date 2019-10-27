@@ -14,8 +14,8 @@
 #include <stdbool.h>
 
 enum MAX_NEIGHBOR {MAX_NEIGHBOR = 256};
-enum MAX_NUM_PATHS {MAX_NUM_PATHS = 100};
-enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 3}; //seconds
+enum MAX_NUM_PATHS {MAX_NUM_PATHS = 25};
+enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 1}; //seconds
 
 typedef struct {
     int idDestination; //id of node I know how to get to
@@ -561,26 +561,24 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path) {
     char *tokenPath, *strPath, *tofreePath;
     tofreePath = strPath = strdup(path);
 
-    paths myPaths = pathsIKnow[destination];
-    int currentKnownSize = myPaths.size;
+    int currentKnownSize = pathsIKnow[destination].size;
     currentKnownSize++;
 
     int i = 0;
-    myPaths.pathsIKnow[currentKnownSize].path[i++] = globalMyID; //make me first in path
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = globalMyID; //make me first in path
     while ((tokenPath = strsep(&strPath, "-"))) {
         int pathStep = atoi(tokenPath);
-        myPaths.pathsIKnow[currentKnownSize].path[i++] = pathStep;
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = pathStep;
     }
 
-    myPaths.pathsIKnow[currentKnownSize].hasUpdates = 1;
-    myPaths.pathsIKnow[currentKnownSize].nextHop = heardFrom;
-    myPaths.pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
-    myPaths.pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
-    myPaths.pathsIKnow[currentKnownSize].idDestination = destination;
-    myPaths.pathsIKnow[currentKnownSize].pathSize = i;
-    myPaths.hasUpdates = 1;
-    myPaths.size = currentKnownSize;
-    pathsIKnow[destination] = myPaths;
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].hasUpdates = 1;
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].nextHop = heardFrom;
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].idDestination = destination;
+    pathsIKnow[destination].pathsIKnow[currentKnownSize].pathSize = i;
+    pathsIKnow[destination].hasUpdates = 1;
+    pathsIKnow[destination].size = currentKnownSize;
 
     free(tofreePath);
 }
@@ -689,7 +687,7 @@ void updateLastHeardTime(short from) {
  * @param heardFrom
  * @return
  */
-int getNeigborCost(short heardFrom) {
+int  getNeigborCost(short heardFrom) {
     int cost = 1;
     if (costs[heardFrom] != NULL) {
         cost = costs[heardFrom];
