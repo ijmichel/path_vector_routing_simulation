@@ -1,0 +1,4 @@
+/media/unicastrouting/programmingassignment2_files/cmake-build-release/CMakeFiles/rebuild_cache.dir
+/media/unicastrouting/programmingassignment2_files/cmake-build-release/CMakeFiles/edit_cache.dir
+/media/unicastrouting/programmingassignment2_files/cmake-build-release/CMakeFiles/main.dir
+/media/unicastrouting/programmingassignment2_files/cmake-build-release/CMakeFiles/manager_send.dir

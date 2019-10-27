@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG   CMakeFiles/manager_send.dir/manager_send.c.o  -o manager_send 

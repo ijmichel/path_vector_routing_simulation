@@ -1,0 +1,4 @@
+/home/ian/clion/clion-2019.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Release -G "CodeBlocks - Unix Makefiles" /media/unicastrouting/programmingassignment2_files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /media/unicastrouting/programmingassignment2_files/cmake-build-release
