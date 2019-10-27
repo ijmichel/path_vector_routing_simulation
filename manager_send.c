@@ -15,8 +15,10 @@ int main(int argc, char** argv)
 //    fprintf(stdout,"one %s\n",argv[1]);
 //    fprintf(stdout,"two %s\n",argv[2]);
 //    fprintf(stdout,"three %s\n",argv[3]);
-	if(argc != 5 || (strcmp(argv[2], "cost") && strcmp(argv[2], "send")))
-	{
+
+    if(0 == strcmp(argv[2], "dump")) {
+        fprintf(stderr, "Dumping: %s\n\n", argv[1]);
+    }else if(argc != 5 || (strcmp(argv[2], "cost") && strcmp(argv[2], "send"))){
 		fprintf(stderr, "Usage: %s destnode command [args]\n'command' must be 'send' or 'cost'.\n\n", argv[0]);
 		if(argc>2 && !strcmp(argv[2], "cost") && argc != 5)
 			fprintf(stderr, "Usage: %s destnode cost destID newCost\n\n", argv[0]);
@@ -24,9 +26,6 @@ int main(int argc, char** argv)
 			fprintf(stderr, "Usage: %s destnode send destID \"the message\"\n\n", argv[0]);
 		exit(1);
 	}
-
-	short int destID = atoi(argv[3]);
-	short int no_destID = htons(destID);
 
 	int senderSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	if(senderSocket < 0)
@@ -56,6 +55,9 @@ int main(int argc, char** argv)
 	if(!strcmp(argv[2], "cost"))
 	{
 
+        short int destID = atoi(argv[3]);
+        short int no_destID = htons(destID);
+
 		int no_newCost = htonl(atoi(argv[4]));
 
 		char sendBuf[4+sizeof(short int)+sizeof(int)];
@@ -68,8 +70,11 @@ int main(int argc, char** argv)
 		          (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
 			perror("sendto()");
 	}
-	else
+	else if(!strcmp(argv[2], "send"))
 	{
+        short int destID = atoi(argv[3]);
+        short int no_destID = htons(destID);
+
 		int msgLen = 4+sizeof(short int)+strlen(argv[4]);
 		char* sendBuf = malloc(msgLen);
 
@@ -80,6 +85,14 @@ int main(int argc, char** argv)
 		if(sendto(senderSocket, sendBuf, msgLen, 0, (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
 			perror("sendto()");
 		free(sendBuf);
+	}else if(!strcmp(argv[2], "dump")){
+        int msgLen = 4;
+        char* sendBuf = malloc(msgLen);
+        strcpy(sendBuf, "dump");
+
+        if(sendto(senderSocket, sendBuf, msgLen, 0, (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
+            perror("sendto()");
+        free(sendBuf);
 	}
 	close(senderSocket);
 }

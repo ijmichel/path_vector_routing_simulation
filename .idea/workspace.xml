@@ -13,12 +13,36 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f99f2f53-f1c5-4e5c-a26c-06e54e9039d6" name="Default Changelist" comment="">
+    <list default="true" id="f99f2f53-f1c5-4e5c-a26c-06e54e9039d6" name="Default Changelist" comment="1. Add logic to know when I get disconnected from my neighbor and then tell all my neighbors about it.">
+      <change afterPath="$PROJECT_DIR$/test1_modified/commands.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/costs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/costs1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/costs2" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/costs3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/costs4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/nodes.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test1_modified/topology.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/main.c.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/main.c.o" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/main" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/main" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeCache.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeCache.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/Makefile2" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/Makefile2" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/build.make" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/build.make" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/manager_send.dir/build.make" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/manager_send.dir/build.make" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ls_router" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/manager_send.c" beforeDir="false" afterPath="$PROJECT_DIR$/manager_send.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/monitor_neighbors.h" beforeDir="false" afterPath="$PROJECT_DIR$/monitor_neighbors.h" afterDir="false" />
+    </list>
+    <list id="1d478f28-e685-4f17-8e19-23916710cc4c" name="Ignore" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/Makefile.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/Makefile.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-log.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/C.includecache" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/C.includecache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/main.c.o" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/main.dir/main.c.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/manager_send.dir/depend.make" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/manager_send.dir/depend.make" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/main" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/main" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/manager_send" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/manager_send" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code.zip" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -48,12 +72,24 @@
       </set>
     </option>
   </component>
+  <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
   <component name="ProjectId" id="1RtkBoU2wryg8KzWsuVoebtE7D3" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../unicast_grading" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/test1_modified" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="restartRequiresConfirmation" value="false" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/test1_modified" />
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -67,32 +103,68 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="CMake Application.main node 2">
-    <configuration name="main node 1" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="1 ../test1/costs1 node1log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+  <component name="RunManager" selected="CMake Application.manager_send - dump">
+    <configuration name="main node 0" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="0 ../example_topology/testinitcosts0 node0log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="main node 2" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="2 ../test1/costs2 node2log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+    <configuration name="main node 1" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="1 ../test1_modified/costs1 node1log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="main node 3" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3 ../test1/costs3 node3log" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+    <configuration name="main node 2" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="2 ../test1_modified/costs2 node2log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="manager_send" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="manager_send" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="manager_send">
+    <configuration name="main node 255" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="255 ../example_topology/testinitcosts255 node255log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="main node 3" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3 ../test1_modified/costs3 node3log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="main node 4" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="4 ../test1_modified/costs4 node4log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="main node 5" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="5 ../example_topology/testinitcosts5 node5log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="main node 6" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="6 ../example_topology/testinitcosts6 node6log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="main node 7" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="7 ../example_topology/testinitcosts7 node7log.txt" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="main" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="main">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="manager_send - dump" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3 dump" PASS_PARENT_ENVS_2="true" PROJECT_NAME="programmingassignment2" TARGET_NAME="manager_send" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="programmingassignment2" RUN_TARGET_NAME="manager_send">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <list>
+      <item itemvalue="CMake Application.main node 0" />
       <item itemvalue="CMake Application.main node 1" />
       <item itemvalue="CMake Application.main node 2" />
       <item itemvalue="CMake Application.main node 3" />
-      <item itemvalue="CMake Application.manager_send" />
+      <item itemvalue="CMake Application.main node 4" />
+      <item itemvalue="CMake Application.main node 5" />
+      <item itemvalue="CMake Application.main node 6" />
+      <item itemvalue="CMake Application.main node 7" />
+      <item itemvalue="CMake Application.main node 255" />
+      <item itemvalue="CMake Application.manager_send - dump" />
     </list>
   </component>
   <component name="SvnConfiguration">
@@ -101,6 +173,7 @@
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="f99f2f53-f1c5-4e5c-a26c-06e54e9039d6" name="Default Changelist" comment="" />
+      <changelist id="1d478f28-e685-4f17-8e19-23916710cc4c" name="Ignore" comment="" />
       <created>1570493649503</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
@@ -115,6 +188,19 @@
       <workItem from="1570587180409" duration="248000" />
       <workItem from="1570587901844" duration="1346000" />
       <workItem from="1570655880972" duration="235000" />
+      <workItem from="1571445650500" duration="289000" />
+      <workItem from="1571445952725" duration="2066000" />
+      <workItem from="1571530245795" duration="8707000" />
+      <workItem from="1571621557644" duration="4709000" />
+      <workItem from="1571787763665" duration="9037000" />
+      <workItem from="1571797497097" duration="587000" />
+      <workItem from="1571798252506" duration="6180000" />
+      <workItem from="1571882475623" duration="2484000" />
+      <workItem from="1571965298600" duration="3318000" />
+      <workItem from="1571969073345" duration="581000" />
+      <workItem from="1572095167553" duration="354000" />
+      <workItem from="1572096138303" duration="572000" />
+      <workItem from="1572115578808" duration="19659000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit 2">
       <created>1570494297423</created>
@@ -151,7 +237,42 @@
       <option name="project" value="LOCAL" />
       <updated>1570655421414</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Move debug statement.  Add Size of path so NEW path messages send out the full one">
+      <created>1571431118434</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1571431118434</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Fix topology file to have my interface name">
+      <created>1571621618489</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1571621618489</updated>
+    </task>
+    <task id="LOCAL-00008" summary="1. Create the log file. &#10;2. Read the destinatio and message for send&#10;3. Write messages to the log file">
+      <created>1571621727342</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1571621727342</updated>
+    </task>
+    <task id="LOCAL-00009" summary="1. Add send of all a nodes path to a new neihbor">
+      <created>1571798325228</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1571798325228</updated>
+    </task>
+    <task id="LOCAL-00010" summary="1. Add logic to know when I get disconnected from my neighbor and then tell all my neighbors about it.">
+      <created>1571969250677</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1571969250677</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -176,6 +297,43 @@
     <MESSAGE value="Read Costs File" />
     <MESSAGE value="Migrate to Ubunto newest version" />
     <MESSAGE value="Make read of costs its own method" />
-    <option name="LAST_COMMIT_MESSAGE" value="Make read of costs its own method" />
+    <MESSAGE value="Move debug statement.  Add Size of path so NEW path messages send out the full one" />
+    <MESSAGE value="Fix topology file to have my interface name" />
+    <MESSAGE value="1. Create the log file. &#10;2. Read the destinatio and message for send&#10;3. Write messages to the log file" />
+    <MESSAGE value="1. Add send of all a nodes path to a new neihbor" />
+    <MESSAGE value="1. Add logic to know when I get disconnected from my neighbor and then tell all my neighbors about it." />
+    <option name="LAST_COMMIT_MESSAGE" value="1. Add logic to know when I get disconnected from my neighbor and then tell all my neighbors about it." />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/manager_send.c</url>
+          <line>31</line>
+          <option name="timeStamp" value="70" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/monitor_neighbors.h</url>
+          <line>605</line>
+          <option name="timeStamp" value="83" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/monitor_neighbors.h</url>
+          <line>235</line>
+          <option name="timeStamp" value="85" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/monitor_neighbors.h</url>
+          <line>4</line>
+          <option name="timeStamp" value="86" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="CMakeRunConfiguration">
+        <watch expression="pathsIKnow" />
+        <watch expression="pathsIKnow[k].size" />
+      </configuration>
+    </watches-manager>
   </component>
 </project>

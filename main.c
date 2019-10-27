@@ -20,7 +20,6 @@ FILE * myLogfile;
 
 int main(int argc, char** argv)
 {
-    debug = true;
 	if(argc != 4)
 	{
 		fprintf(stderr, "Usage: %s mynodeid initialcostsfile logfile\n\n", argv[0]);
@@ -30,6 +29,17 @@ int main(int argc, char** argv)
 	//initialization: get this process's node ID, record what time it is, 
 	//and set up our sockaddr_in's for sending to the other nodes.
 	globalMyID = atoi(argv[1]);
+
+
+	debug = false;
+//    if(globalMyID == 1) {
+//        fprintf(stdout, "DEBUG ON ! --> %d \n", globalMyID);
+//        debug = true;
+//    }else {
+//        fprintf(stdout, "DEBUG OFF ! --> %d \n", globalMyID);
+//        debug = false;
+//    }
+
 	int i;
 	for(i=0;i<MAX_NEIGHBOR;i++)
 	{

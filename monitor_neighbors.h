@@ -13,7 +13,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-enum MAX_NEIGHBOR {MAX_NEIGHBOR = 4};
+enum MAX_NEIGHBOR {MAX_NEIGHBOR = 256};
 enum MAX_NUM_PATHS {MAX_NUM_PATHS = 100};
 enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 3}; //seconds
 
@@ -219,6 +219,38 @@ void *shareMyPathsToNeighbors(void *unusedParam) {
     }
 }
 
+//To send updates for new data
+void *dumpMyPathsToConsole() {
+    for (int k = 0; k < MAX_NEIGHBOR; k++){ //go through all my destinations
+        if (k != globalMyID) { //Don't send them my path or their own path
+            if (pathsIKnow[k].size != -1) { //If I actually have paths to them
+                for (int p = 0; p <= pathsIKnow[k].size; p++) { //go through them and send
+                    path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
+                    char *pathToDestination = convertPath(pathWithUpdate);
+
+                    //|command|destinationId|data|
+                    char *destination[3]; //Because 256 is greatest value we get (3 size)
+                    sprintf(destination, "%d", pathWithUpdate.idDestination);
+
+                    char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                    sprintf(nextHop, "%d", pathWithUpdate.nextHop);
+
+                    char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                    sprintf(costOfPath, "%d", pathWithUpdate.cost);
+
+                    char *updateMessageToSend = concat(9, "KNOWNPATH", "[To:", destination, "][Path:",
+                                                       pathToDestination, "][Cost:", costOfPath, "][nextHop:",
+                                                       nextHop, "]");
+                    fprintf(stdout,"%s\n",updateMessageToSend);
+
+                    free(updateMessageToSend);
+                }
+            }
+        }
+    }
+
+}
+
 
 
 char *convertPath(path dPath) {
@@ -322,7 +354,13 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 establishNeighbor(heardFrom);
             }
         }else if (!strncmp(recvBuf, "NEWPATH", 7)) {
-            processNewPath(recvBuf,heardFrom);
+            processNewPath(recvBuf, heardFrom);
+        }else if(!strncmp(recvBuf,"dump",4)){
+            if(debug){
+                fprintf(stdout, "Received DUMP %d\n",globalMyID);
+            }
+
+            dumpMyPathsToConsole();
         }else if (!strncmp(recvBuf, "send", 4)  || !strncmp(recvBuf, "frwd", 4)) {
             short int destId = ntohs(*((short int *)(recvBuf+4)));
 
@@ -398,7 +436,7 @@ void resetPath(short disconnectId, int i) {
     pathToupdate.cost = 999;
     pathToupdate.costBeforeAddingMine = 999;
     pathToupdate.nextHop = 999;
-    pathToupdate.pathSize = 999;
+    pathToupdate.pathSize = 0;
     for(int j=0 ;j < MAX_NEIGHBOR;j++){
         int cPathValue = pathToupdate.path[j];
         cPathValue = 999;
@@ -418,9 +456,16 @@ int getNextHop(short destId) {
         int leastCost = 99999;
         for(int i=0;i<MAX_NUM_PATHS;i++){
             int currCost = pathsIKnow[destId].pathsIKnow[i].cost;
-            if(currCost<leastCost){//just take least cost path I know
+            char *pathToDestination = convertPath(pathsIKnow[destId].pathsIKnow[i]);
+            //fprintf(stdout,"I'm %d Looking at [Path:%d][PathIs:%s][TotalPaths:%d][To:%d][Cost:%d][Leastcost:%d]\n",globalMyID,i,pathToDestination,pathsIKnow[destId].size,destId,currCost,leastCost);
+            if(currCost<leastCost){//take it because its least cost
                 leastCost = currCost;
                 nextHop = pathsIKnow[destId].pathsIKnow[i].nextHop;
+            }else if(currCost == leastCost){//tie breaker : take it only if nextHop is less than current nextHop
+                if(pathsIKnow[destId].pathsIKnow[i].nextHop < nextHop){
+                    leastCost = currCost;
+                    nextHop = pathsIKnow[destId].pathsIKnow[i].nextHop;
+                }
             }
         }
     }
@@ -521,12 +566,12 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path) {
     currentKnownSize++;
 
     int i = 0;
+    myPaths.pathsIKnow[currentKnownSize].path[i++] = globalMyID; //make me first in path
     while ((tokenPath = strsep(&strPath, "-"))) {
         int pathStep = atoi(tokenPath);
         myPaths.pathsIKnow[currentKnownSize].path[i++] = pathStep;
     }
 
-    myPaths.pathsIKnow[currentKnownSize].path[i] = globalMyID;
     myPaths.pathsIKnow[currentKnownSize].hasUpdates = 1;
     myPaths.pathsIKnow[currentKnownSize].nextHop = heardFrom;
     myPaths.pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
@@ -553,8 +598,8 @@ void establishNeighbor(short heardFrom) {
         myPath.size = currentKnownSize;
 
         newPath.cost = getNeigborCost(heardFrom);
-        newPath.path[0] = globalMyID;
-        newPath.path[1] = heardFrom;
+        newPath.path[0] = heardFrom;
+        newPath.path[1] = globalMyID;
         newPath.pathSize = 2;
         newPath.idDestination = heardFrom;
         newPath.hasUpdates = 1;
@@ -565,7 +610,7 @@ void establishNeighbor(short heardFrom) {
         myPath.hasUpdates = 1; //To trigger a flood to neighbors of new paths for this destination
 
         if (debug) {
-            fprintf(stdout, "New Neighbor |Id:%d|Cost:%d|\n", heardFrom, newPath.cost);
+            fprintf(stdout, "[%d] New Neighbor |Id:%d|Cost:%d|\n", globalMyID,heardFrom, newPath.cost);
         }
 
         myPath.alreadyProcessedNeighbor = 1;
