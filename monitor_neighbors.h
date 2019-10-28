@@ -186,13 +186,13 @@ void *shareMyPathsToNeighbors(void *unusedParam) {
                                     char *pathToDestination = convertPath(pathWithUpdate);
 
                                     //|command|destinationId|data|
-                                    char *destination[3]; //Because 256 is greatest value we get (3 size)
+                                    char *destination[4]; //Because 256 is greatest value we get (3 size)
                                     sprintf(destination, "%d", pathWithUpdate.idDestination);
 
-                                    char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                                    char *nextHop[4]; //Because the next hop will always be me from my neighbor
                                     sprintf(nextHop, "%d", globalMyID);
 
-                                    char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                                    char *costOfPath[6]; //5?  hopefully enough to hold max cost
                                     sprintf(costOfPath, "%d", pathWithUpdate.cost);
 
                                     char *updateMessageToSend = concat(9, "NEWPATH", "|", destination, "|",
@@ -229,13 +229,13 @@ void *dumpMyPathsToConsole() {
                     char *pathToDestination = convertPath(pathWithUpdate);
 
                     //|command|destinationId|data|
-                    char *destination[3]; //Because 256 is greatest value we get (3 size)
+                    char *destination[4]; //Because 256 is greatest value we get (3 size)
                     sprintf(destination, "%d", pathWithUpdate.idDestination);
 
-                    char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                    char *nextHop[4]; //Because the next hop will always be me from my neighbor
                     sprintf(nextHop, "%d", pathWithUpdate.nextHop);
 
-                    char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                    char *costOfPath[6]; //5?  hopefully enough to hold max cost
                     sprintf(costOfPath, "%d", pathWithUpdate.cost);
 
                     char *updateMessageToSend = concat(9, "KNOWNPATH", "[To:", destination, "][Path:",
@@ -490,6 +490,7 @@ void processNewPath(const unsigned char *recvBuf,short heardFrom) {
     free(tofree);
 
 }
+
 
 void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destination, int *cost, char **path) {
     char *token, *str;
