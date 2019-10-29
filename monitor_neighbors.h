@@ -13,18 +13,18 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-enum MAX_NEIGHBOR {MAX_NEIGHBOR = 256};
-enum MAX_NUM_PATHS {MAX_NUM_PATHS = 25};
-enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 1}; //seconds
+enum MAX_NEIGHBOR {MAX_NEIGHBOR = 80};
+enum MAX_NUM_PATHS {MAX_NUM_PATHS = 80};
+enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 3}; //seconds
 
 typedef struct {
     int idDestination; //id of node I know how to get to
     int cost; //cost to get there
     int costBeforeAddingMine;
-    int path[MAX_NEIGHBOR]; //The [0]th element is the id of the first node in the path --Used to find loops
     int hasUpdates; //To trigger an update if not alreadyknown
     int nextHop; //In order to know where to go next for this destination
     int pathSize;
+    int path[MAX_NEIGHBOR]; //The [0]th element is the id of the first node in the path --Used to find loops
 } path;
 
 typedef struct { //So we can store many paths to a destination that we've heard
@@ -36,7 +36,22 @@ typedef struct { //So we can store many paths to a destination that we've heard
     path pathsIKnow[MAX_NUM_PATHS];
 } paths;
 
-paths pathsIKnow[MAX_NEIGHBOR];
+paths pathsIKnow[MAX_NEIGHBOR] =
+{
+  [0 ... MAX_NEIGHBOR - 1] =
+   {
+    -1,0,0,0,0, //size,hasUpdates,alreadyProcessedNeighbor,isMyNeighbor,needsMyPaths
+    {
+     [0 ... MAX_NUM_PATHS - 1] =
+        {
+           0,999,0,0,0,0,
+           {
+               [0 ... MAX_NEIGHBOR - 1] = 999
+           }
+        }
+    }
+   }
+};
 
 extern struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
 extern struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
