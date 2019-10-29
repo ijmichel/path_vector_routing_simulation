@@ -106,11 +106,11 @@ char* concat(int count, ...);
 
 void hackyUpdateKnownPaths();
 
-void processNewPath(const unsigned char *recvBuf,short heardFrom);
+void processNewPath(const unsigned char *recvBuf,short heardFrom, bool flood);
 
 bool amIInPath(const char *path);
 
-void addNewPath(short heardFrom, int destination, int cost, const char *path);
+void addNewPath(short heardFrom, int destination, int cost, const char *path,bool flood);
 
 void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destination, int *cost, char **path);
 
@@ -210,18 +210,21 @@ void *shareMyPathsToNeighbors(void *unusedParam) {
                                     char *costOfPath[6]; //5?  hopefully enough to hold max cost
                                     sprintf(costOfPath, "%d", pathWithUpdate.cost);
 
-                                    char *updateMessageToSend = concat(9, "NEWPATH", "|", destination, "|",
-                                                                       pathToDestination, "|", costOfPath, "|",
-                                                                       nextHop);
-                                    if (debug) {
-                                        fprintf(stdout,
-                                                "Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s]\n",
-                                                i, k, pathToDestination);
-                                    }
-                                    sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
-                                           (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+                                    if(destination != 999){
+                                        char *updateMessageToSend = concat(9, "NNWPATH", "|", destination, "|",
+                                                                           pathToDestination, "|", costOfPath, "|",
+                                                                           nextHop);
+                                        if (debug) {
+                                            fprintf(stdout,
+                                                    "Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s]\n",
+                                                    i, k, pathToDestination);
+                                        }
+                                        sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                                               (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
 
-                                    free(updateMessageToSend);
+                                        free(updateMessageToSend);
+                                    }
+
                                 }
                             }
                         }
@@ -369,7 +372,9 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 establishNeighbor(heardFrom);
             }
         }else if (!strncmp(recvBuf, "NEWPATH", 7)) {
-            processNewPath(recvBuf, heardFrom);
+            processNewPath(recvBuf, heardFrom,true);
+        }else if (!strncmp(recvBuf, "NNWPATH", 7)) {
+            processNewPath(recvBuf, heardFrom,false);
         }else if(!strncmp(recvBuf,"dump",4)){
             if(debug){
                 fprintf(stdout, "Received DUMP %d\n",globalMyID);
@@ -487,7 +492,7 @@ int getNextHop(short destId) {
     return nextHop;
 }
 
-void processNewPath(const unsigned char *recvBuf,short heardFrom) {
+void processNewPath(const unsigned char *recvBuf,short heardFrom,bool flood){
 
     char *tofree;
     int destination;
@@ -497,9 +502,9 @@ void processNewPath(const unsigned char *recvBuf,short heardFrom) {
     extractNewPathData(recvBuf, &tofree, &destination, &cost, &path);
 
     if(amIInPath(path)==false){//To prevent loops
-        addNewPath(heardFrom, destination, cost, path);
-        if(debug)
-            fprintf(stdout, "NEWPATH Message Processed from %d --> %s\n", heardFrom, recvBuf);
+        addNewPath(heardFrom, destination, cost, path,flood);
+//        if(globalMyID == 0 && destination==77)
+//            fprintf(stdout, "[%d] NEWPATH to [%d] Message Processed from %d --> %s\n", globalMyID,destination,heardFrom, recvBuf);
     }
 
     free(tofree);
@@ -551,19 +556,21 @@ void hackyUpdateKnownPaths() {
                         char *costOfPath[5]; //5?  hopefully enough to hold max cost
                         sprintf(costOfPath,"%d",pathWithUpdate.cost);
 
-                        updateMessageToSend = concat(9,"NEWPATH","|",destination,"|",pathToDestination,"|",costOfPath,"|",nextHop);
+                        if(destination != 999){
+                            updateMessageToSend = concat(9,"NEWPATH","|",destination,"|",pathToDestination,"|",costOfPath,"|",nextHop);
 
-                        for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
-                            if (debug) {
-                                fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, pathToDestination);
-                                //fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
+                            for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
+                                if (debug) {
+                                    fprintf(stdout, "Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",possibleNeighbor, i, pathToDestination);
+                                    //fprintf(stdout, "Update Neighbors With: |Message:[%s]\n", updateMessageToSend);
+                                }
+                                sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                                       (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
+
                             }
-                            sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
-                                   (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
-
+                            free(updateMessageToSend);
+                            pathsIKnow[i].pathsIKnow[q].hasUpdates = 0;
                         }
-                        free(updateMessageToSend);
-                        pathsIKnow[i].pathsIKnow[q].hasUpdates = 0;
                     }
                 }
                 pathsIKnow[i].hasUpdates=0; //so we don't send updates again
@@ -573,7 +580,7 @@ void hackyUpdateKnownPaths() {
 
 }
 
-void addNewPath(short heardFrom, int destination, int cost, const char *path) {
+void addNewPath(short heardFrom, int destination, int cost, const char *path, bool flood) {
     char *tokenPath, *strPath, *tofreePath;
     tofreePath = strPath = strdup(path);
 
@@ -593,24 +600,36 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path) {
     if(shouldProcess){
         currentKnownSize++;
 
-    int i = 0;
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = globalMyID; //make me first in path
-    while ((tokenPath = strsep(&strPath, "-"))) {
-        int pathStep = atoi(tokenPath);
-        pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = pathStep;
-    }
+        int i = 0;
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = globalMyID; //make me first in path
+        while ((tokenPath = strsep(&strPath, "-"))) {
+            int pathStep = atoi(tokenPath);
+            pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = pathStep;
+        }
 
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].hasUpdates = 1;
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].nextHop = heardFrom;
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].idDestination = destination;
-    pathsIKnow[destination].pathsIKnow[currentKnownSize].pathSize = i;
-    pathsIKnow[destination].hasUpdates = 1;
-    pathsIKnow[destination].size = currentKnownSize;
+        if(flood)
+            pathsIKnow[destination].pathsIKnow[currentKnownSize].hasUpdates = 1;
+        else
+            pathsIKnow[destination].pathsIKnow[currentKnownSize].hasUpdates = 0;
+
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].nextHop = heardFrom;
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].idDestination = destination;
+        pathsIKnow[destination].pathsIKnow[currentKnownSize].pathSize = i;
+
+        if(flood)
+            pathsIKnow[destination].hasUpdates = 1;
+        else
+            pathsIKnow[destination].hasUpdates = 0;
+
+        pathsIKnow[destination].size = currentKnownSize;
 
         free(tofreePath);
     }
+
+
+}
 
 /**
  * Because a neighbor announcing itself means 1 known path with current cost value
