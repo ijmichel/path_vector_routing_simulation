@@ -7,7 +7,6 @@
 void listenForNeighbors();
 void* announceToNeighbors(void* unusedParam);
 void readCostsFile(char *const *argv);
-void initKnownPaths();
 
 int globalMyID = 0;
 struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
@@ -60,7 +59,6 @@ int main(int argc, char** argv)
 	
 	//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.
     readCostsFile(argv);
-	initKnownPaths();
 
     //socket() and bind() our socket. We will do all sendto()ing and recvfrom()ing on this one.
 	if((globalSocketUDP=socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -106,37 +104,6 @@ int main(int argc, char** argv)
 
 	//good luck, have fun!
 	listenForNeighbors();
-
-}
-
-void initKnownPaths() {
-    for(int j=0;j<MAX_NEIGHBOR;j++){
-        paths pathsToI = pathsIKnow[j];
-        pathsToI.size = -1;
-        pathsToI.hasUpdates = 0;
-        pathsToI.alreadyProcessedNeighbor = 0;
-        pathsToI.isMyNeighbor = 0;
-        pathsToI.needsMyPaths = 0;
-
-        for(int i=0 ;i < MAX_NUM_PATHS;i ++){
-            path pathToupdate = pathsToI.pathsIKnow[i];
-            pathToupdate.cost = 9999;
-            for(int j=0 ;j < MAX_NEIGHBOR;j++){
-                int cPathValue = pathToupdate.path[j];
-                cPathValue = 999;
-                pathToupdate.path[j] = cPathValue;
-            }
-
-            pathToupdate.hasUpdates = 0;
-
-            pathsToI.pathsIKnow[i] = pathToupdate;
-            pathsIKnow[j] = pathsToI;
-
-        }
-
-    }
-    fprintf(stdout, "Init Complete ");
-
 
 }
 
