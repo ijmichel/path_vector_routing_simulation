@@ -165,7 +165,7 @@ void *processDisconnects(void *unusedParam) {
 
                     if( j != i && j != globalMyID){
                         if(debug)
-                            fprintf(stdout, "Neighbor Disconnect [%d] Telling my Neighbors \n",i);
+                            fprintf(stdout, "[%d] Neighbor Disconnect [%d] Telling my Neighbors \n",globalMyID,i);
                         sendto(globalSocketUDP, sendBuf, msgLen, 0, (struct sockaddr*)&globalNodeAddrs[j], sizeof(globalNodeAddrs[j]));
                     }
                 }
