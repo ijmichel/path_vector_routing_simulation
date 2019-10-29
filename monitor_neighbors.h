@@ -578,7 +578,20 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path) {
     tofreePath = strPath = strdup(path);
 
     int currentKnownSize = pathsIKnow[destination].size;
-    currentKnownSize++;
+
+    bool shouldProcess = true;
+    if(currentKnownSize > 0){
+        for(int q=0;q<=currentKnownSize;q++){
+            if(pathsIKnow[destination].pathsIKnow[q].cost == cost && pathsIKnow[destination].pathsIKnow[q].nextHop == heardFrom){
+                if(strcmp(path,convertPath(pathsIKnow[destination].pathsIKnow[q])) == 0){
+                    shouldProcess=false;
+                }
+            }
+        }
+    }
+
+    if(shouldProcess){
+        currentKnownSize++;
 
     int i = 0;
     pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i++] = globalMyID; //make me first in path
@@ -596,8 +609,8 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path) {
     pathsIKnow[destination].hasUpdates = 1;
     pathsIKnow[destination].size = currentKnownSize;
 
-    free(tofreePath);
-}
+        free(tofreePath);
+    }
 
 /**
  * Because a neighbor announcing itself means 1 known path with current cost value
