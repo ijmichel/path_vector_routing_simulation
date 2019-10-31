@@ -502,9 +502,10 @@ void processNewPath(const unsigned char *recvBuf,short heardFrom,bool flood){
     extractNewPathData(recvBuf, &tofree, &destination, &cost, &path);
 
     if(amIInPath(path)==false){//To prevent loops
-        addNewPath(heardFrom, destination, cost, path,flood);
-//        if(globalMyID == 0 && destination==77)
-//            fprintf(stdout, "[%d] NEWPATH to [%d] Message Processed from %d --> %s\n", globalMyID,destination,heardFrom, recvBuf);
+        if(destination != 999) {
+            addNewPath(heardFrom, destination, cost, path, flood);
+        }
+
     }
 
     free(tofree);
@@ -587,10 +588,10 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path, bo
     int currentKnownSize = pathsIKnow[destination].size;
 
     bool shouldProcess = true;
-    if(currentKnownSize > 0){
+    if(currentKnownSize >= 0){
         for(int q=0;q<=currentKnownSize;q++){
             if(pathsIKnow[destination].pathsIKnow[q].cost == cost && pathsIKnow[destination].pathsIKnow[q].nextHop == heardFrom){
-                if(strcmp(path,convertPath(pathsIKnow[destination].pathsIKnow[q])) == 0){
+                if(strcmp(strPath,convertPath(pathsIKnow[destination].pathsIKnow[q])) == 0){
                     shouldProcess=false;
                 }
             }
@@ -636,20 +637,19 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path, bo
  * @param heardFrom
  */
 void establishNeighbor(short heardFrom) {
-    paths myPath = pathsIKnow[heardFrom];
+    if(pathsIKnow[heardFrom].alreadyProcessedNeighbor == 0){
+        pathsIKnow[heardFrom].size++;
 
-    if(myPath.alreadyProcessedNeighbor == 0){
-        int currentKnownSize = myPath.size;
-        path newPath = myPath.pathsIKnow[++currentKnownSize];
-        myPath.size = currentKnownSize;
-
-        newPath.cost = getNeigborCost(heardFrom);
-        newPath.path[0] = heardFrom;
-        newPath.path[1] = globalMyID;
-        newPath.pathSize = 2;
-        newPath.idDestination = heardFrom;
-        newPath.hasUpdates = 1;
-        newPath.nextHop = heardFrom;
+        pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].cost = getNeigborCost(heardFrom);
+        pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].path[0] = heardFrom;
+        pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].path[1] = globalMyID;
+        pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].pathSize = 2;
+        pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].hasUpdates = 1;
+        pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].nextHop = heardFrom;
+        pathsIKnow[heardFrom].hasUpdates = 1; //To trigger a flood to neighbors of new paths for this destination
+        pathsIKnow[heardFrom].alreadyProcessedNeighbor = 1;
+        pathsIKnow[heardFrom].isMyNeighbor = 1;
+        pathsIKnow[heardFrom].needsMyPaths = 1;
 
         myPath.pathsIKnow[currentKnownSize] = newPath;
 
@@ -658,12 +658,6 @@ void establishNeighbor(short heardFrom) {
         if (debug) {
             fprintf(stdout, "[%d] New Neighbor |Id:%d|Cost:%d|\n", globalMyID,heardFrom, newPath.cost);
         }
-
-        myPath.alreadyProcessedNeighbor = 1;
-        myPath.isMyNeighbor = 1;
-        myPath.needsMyPaths = 1;
-
-        pathsIKnow[heardFrom] = myPath;
     }
 
 }
