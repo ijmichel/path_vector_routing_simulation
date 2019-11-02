@@ -11,10 +11,10 @@
 
 int main(int argc, char** argv)
 {
-    fprintf(stdout,"\nzero %s\n",argv[0]);
-    fprintf(stdout,"one %s\n",argv[1]);
-    fprintf(stdout,"two %s\n",argv[2]);
-    fprintf(stdout,"three %s\n",argv[3]);
+//    fprintf(stdout,"\nzero %s\n",argv[0]);
+//    fprintf(stdout,"one %s\n",argv[1]);
+//    fprintf(stdout,"two %s\n",argv[2]);
+//    fprintf(stdout,"three %s\n",argv[3]);
 
     if(0 == strcmp(argv[2], "dump")) {
         fprintf(stderr, "Dumping: %s\n\n", argv[1]);
