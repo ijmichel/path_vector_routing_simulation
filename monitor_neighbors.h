@@ -13,9 +13,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-enum MAX_NEIGHBOR {MAX_NEIGHBOR = 255};
-enum MAX_NUM_PATHS {MAX_NUM_PATHS = 20000};
-enum NOT_HEARD_FROM_SINCE {NOT_HEARD_FROM_SINCE = 200}; //seconds
+#define MAX_NEIGHBOR  256
+#define MAX_NUM_PATHS 2500
+#define NOT_HEARD_FROM_SINCE 2
 
 pthread_mutex_t updateLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -58,7 +58,7 @@ extern struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
 extern struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 extern char costs[MAX_NEIGHBOR];
 
-extern bool debug,newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath;
+extern bool debug,newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh;
 static const int SLEEPTIME = 300 * 1000 * 1000; //300 ms
 static const int SLEEPTIME_DISCONNECT = 300 * 1000 * 1000 * 3; //900 ms
 extern int globalMyID;
@@ -452,7 +452,7 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 int numRemoved = 0;
                 for (int i = 0 ; i<= pathsIKnow[disconnectId].size;i++){
                     if(pathsIKnow[disconnectId].pathsIKnow[i].nextHop == heardFrom){
-                        if(debug)
+                        if(debug && debugEstablishNeigh)
                             fprintf(stdout, "Removing my [%d] path to [%d] with nextHop %d\n",i,disconnectId, heardFrom);
                         resetPath(disconnectId, i); //record it
                         numRemoved++;
@@ -718,7 +718,7 @@ void establishNeighbor(short heardFrom) {
         pathsIKnow[heardFrom].isMyNeighbor = 1;
         pathsIKnow[heardFrom].needsMyPaths = 1;
 
-        if (debug) {
+        if (debug  && debugEstablishNeigh) {
            fprintf(stdout, "[%d] New Neighbor |Id:%d|Cost:%d|\n", globalMyID,heardFrom, pathsIKnow[heardFrom].pathsIKnow[pathsIKnow[heardFrom].size].cost);
         }
     }
