@@ -14,7 +14,7 @@ int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
-bool debug;
+bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath;
 FILE * myLogfile;
 
 int main(int argc, char** argv)
@@ -31,6 +31,10 @@ int main(int argc, char** argv)
 
 
 	debug = false;
+    newPathDebug = false;
+    NNWPATHdebug = false;
+    debugDupPath = false;
+    debugAddPath = false;
 //    if(globalMyID == 1) {
 //        fprintf(stdout, "DEBUG ON ! --> %d \n", globalMyID);
 //        debug = true;
@@ -51,11 +55,6 @@ int main(int argc, char** argv)
 		globalNodeAddrs[i].sin_port = htons(7777);
 		inet_pton(AF_INET, tempaddr, &globalNodeAddrs[i].sin_addr);
 	}
-
-	if(debug){
-	    fprintf(stdout,"Boot up! --> %d \n", globalMyID);
-	}
-	
 	
 	//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.
     readCostsFile(argv);
@@ -99,8 +98,8 @@ int main(int argc, char** argv)
     pthread_t sharingThread;
     pthread_create(&sharingThread, 0, shareMyPathsToNeighbors, (void*)0);
 
-    pthread_t disconnectThread;
-    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
+//    pthread_t disconnectThread;
+//    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
 
 	//good luck, have fun!
 	listenForNeighbors();
