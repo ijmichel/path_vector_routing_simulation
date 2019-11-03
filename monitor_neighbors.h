@@ -128,6 +128,8 @@ void resetPath(short disconnectId, int i);
 
 bool isNewPath(short heardFrom, int destination, int cost, const char *strPath, int currentKnownSize);
 
+void shareMyPathsToNeighbor(int neighborNum);
+
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
 //which we can't do in this assignment.
@@ -195,62 +197,6 @@ void *processDisconnects(void *unusedParam) {
 }
 
 //To send updates for new data
-void *shareMyPathsToNeighbors(void *unusedParam) {
-    struct timespec sleepFor = getHowLongToSleep();
-    while (1) {
-        for (int i= 0; i < MAX_NEIGHBOR; i++){
-            if (i != globalMyID) {
-                if(pathsIKnow[i].needsMyPaths==1){ //Because new neighbors need to know ALL my paths I know
-                    for (int k = 0; k < MAX_NEIGHBOR; k++){ //go through all my destinations
-                        if (k != globalMyID && k != i) { //Don't send them my path or their own path
-                            if (pathsIKnow[k].size != -1) { //If I actually have paths to them
-                                for (int p = 0; p <= pathsIKnow[k].size; p++) { //go through them and send
-                                    if(pathsIKnow[k].pathsIKnow[p].nextHop != i){//Don't se it paths which we already know go to it
-                                        path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
-                                        char *pathToDestination = convertPath(pathWithUpdate);
-
-                                        //|command|destinationId|data|
-                                        char *destination[4]; //Because 256 is greatest value we get (3 size)
-                                        sprintf(destination, "%d", k);
-
-                                        char *nextHop[4]; //Because the next hop will always be me from my neighbor
-                                        sprintf(nextHop, "%d", globalMyID);
-
-                                        char *costOfPath[6]; //5?  hopefully enough to hold max cost
-                                        sprintf(costOfPath, "%d", pathWithUpdate.cost);
-
-                                        char *updateMessageToSend = concat(9, "NNWPATH", "|", destination, "|",
-                                                                           pathToDestination, "|", costOfPath, "|",
-                                                                           nextHop);
-                                        if (debug && NNWPATHdebug) {
-                                            fprintf(stdout,
-                                                    "[%d] Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s][nextHop:%s][Cost:%s]\n",
-                                                    globalMyID,i, k, pathToDestination,nextHop,costOfPath);
-                                        }
-
-
-                                        sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
-                                               (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
-
-                                        if(debugSendReceiveCount){
-                                            sentToCount[i]++;
-                                        }
-
-                                        free(updateMessageToSend);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    pathsIKnow[i].needsMyPaths=0;
-                }
-            }
-        }
-        nanosleep(&sleepFor, 0);
-    }
-}
-
-//To send updates for new data
 void *dumpMyPathsToConsole() {
     for (int k = 0; k < MAX_NEIGHBOR; k++){ //go through all my destinations
         if (k != globalMyID) { //Don't send them my path or their own path
@@ -284,6 +230,7 @@ void *dumpMyPathsToConsole() {
 
 //To send updates for new data
 void *dumpMyPathStatsToConsole() {
+    int totalNumPaths = 0;
     for (int k = 0; k < MAX_NEIGHBOR; k++){ //go through all my destinations
         if (k != globalMyID) { //Don't send them my path or their own path
             if (pathsIKnow[k].size != -1) { //If I actually have paths to them
@@ -298,9 +245,11 @@ void *dumpMyPathStatsToConsole() {
                 fprintf(stdout,"%s\n",updateMessageToSend);
 
                 free(updateMessageToSend);
+                totalNumPaths = totalNumPaths + pathsIKnow[k].size;
             }
         }
     }
+    fprintf(stdout,"[TotalNum:%d]\n",totalNumPaths);
 
 }
 
@@ -440,7 +389,7 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
             fprintf(stdout, "Received DUMP %d\n",globalMyID);
 
 //            dumpMyPathsToConsole();
-//            dumpMyPathStatsToConsole();
+            dumpMyPathStatsToConsole();
             if(debugSendReceiveCount){
                 for(int m =0; m <MAX_NEIGHBOR;m++){
                     if(pathsIKnow[m].isMyNeighbor==1)
@@ -454,10 +403,15 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
             }
 
             if(debugReceiveProcessedCount){
-                for(int m =0; m <MAX_NEIGHBOR;m++){
-                    if(pathsIKnow[m].isMyNeighbor==1)
-                        fprintf(stdout, "[Processed:%d][%d]\n",receivedAndProcessedFromCount[m],m);
+                int totalNumberRecProc = 0;
+                for(int m =0; m <MAX_NEIGHBOR;m++) {
+                    if (pathsIKnow[m].isMyNeighbor == 1) {
+                        totalNumberRecProc = totalNumberRecProc + receivedAndProcessedFromCount[m];
+                        fprintf(stdout, "[Processed:%d][%d]\n", receivedAndProcessedFromCount[m], m);
+                    }
                 }
+                fprintf(stdout, "[TotalRecProc:%d]\n",totalNumberRecProc);
+
             }
 
         }else if (!strncmp(recvBuf, "send", 4)  || !strncmp(recvBuf, "frwd", 4)) {
@@ -662,10 +616,60 @@ void hackyUpdateKnownPaths() {
                 }
                 pathsIKnow[i].hasUpdates=0; //so we don't send updates again
             }
-
+            if(pathsIKnow[i].needsMyPaths==1){
+                shareMyPathsToNeighbor(i);
+                pathsIKnow[i].needsMyPaths=0;
+            }
         }
 
 }
+
+
+//To send updates for new data
+void shareMyPathsToNeighbor(int i) {
+    for (int k = 0; k < MAX_NEIGHBOR; k++) { //go through all my destinations
+        if (k != globalMyID && k != i) { //Don't send them my path or their own path
+            if (pathsIKnow[k].size != -1) { //If I actually have paths to them
+                for (int p = 0; p <= pathsIKnow[k].size; p++) { //go through them and send
+                    if (pathsIKnow[k].pathsIKnow[p].nextHop != i) {//Don't se it paths which we already know go to it
+                        path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
+                        char *pathToDestination = convertPath(pathWithUpdate);
+
+                        //|command|destinationId|data|
+                        char *destination[4]; //Because 256 is greatest value we get (3 size)
+                        sprintf(destination, "%d", k);
+
+                        char *nextHop[4]; //Because the next hop will always be me from my neighbor
+                        sprintf(nextHop, "%d", globalMyID);
+
+                        char *costOfPath[6]; //5?  hopefully enough to hold max cost
+                        sprintf(costOfPath, "%d", pathWithUpdate.cost);
+
+                        char *updateMessageToSend = concat(9, "NNWPATH", "|", destination, "|",
+                                                           pathToDestination, "|", costOfPath, "|",
+                                                           nextHop);
+                        if (debug && NNWPATHdebug) {
+                            fprintf(stdout,
+                                    "[%d] Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s][nextHop:%s][Cost:%s]\n",
+                                    globalMyID, i, k, pathToDestination, nextHop, costOfPath);
+                        }
+
+
+                        sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                               (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+
+                        if (debugSendReceiveCount) {
+                            sentToCount[i]++;
+                        }
+
+                        free(updateMessageToSend);
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 void addNewPath(short heardFrom, int destination, int cost, const char *path, bool flood) {
     if(debug && debugDupPath)
@@ -674,52 +678,52 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path, bo
     char *tokenPath, *strPath, *tofreePath;
     tofreePath = strPath = strdup(path);
 
-    int currentKnownSize = pathsIKnow[destination].size;
-
-    bool isNew = isNewPath(heardFrom, destination, cost, strPath, currentKnownSize);
+    bool isNew = isNewPath(heardFrom, destination, cost, strPath, pathsIKnow[destination].size+1);
 
     if(isNew){
-
-        currentKnownSize++;
 
         if(debugAddPath)
             fprintf(stdout, "\nNEW [%d] [heardFrom:%d][destination:%d][cost:%d][path:%s]\n",globalMyID,heardFrom,destination,cost,path);
 
-        if(currentKnownSize >= MAX_NUM_PATHS)
-            fprintf(stdout,"!!!! [Size:%d]\n",currentKnownSize);
+        if(pathsIKnow[destination].size+1 >= MAX_NUM_PATHS)
+            fprintf(stdout,"!!!! [Size:%d]\n",pathsIKnow[destination].size+1);
 
         int i = 0;
-        pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i] = globalMyID; //make me first in path
+        pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].path[i] = globalMyID; //make me first in path
         while ((tokenPath = strsep(&strPath, "-"))) {
             i++;
             int pathStep = atoi(tokenPath);
-            pathsIKnow[destination].pathsIKnow[currentKnownSize].path[i] = pathStep;
+            pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].path[i] = pathStep;
         }
 
         if(flood==true)
-            pathsIKnow[destination].pathsIKnow[currentKnownSize].hasUpdates = 1;
+            pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].hasUpdates = 1;
         else
-            pathsIKnow[destination].pathsIKnow[currentKnownSize].hasUpdates = 0;
+            pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].hasUpdates = 0;
 
-        pathsIKnow[destination].pathsIKnow[currentKnownSize].nextHop = heardFrom;
-        pathsIKnow[destination].pathsIKnow[currentKnownSize].costBeforeAddingMine = cost;
-        pathsIKnow[destination].pathsIKnow[currentKnownSize].cost = cost + getNeigborCost(heardFrom);
-//        fprintf(stdout, "Neihbor Cost [%d] Incoming Cost [%d][Result Cost:%d]\n",getNeigborCost(heardFrom), cost, pathsIKnow[destination].pathsIKnow[currentKnownSize].cost);
-        pathsIKnow[destination].pathsIKnow[currentKnownSize].pathSize = i;
+        pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].nextHop = heardFrom;
+        pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].costBeforeAddingMine = cost;
+        pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].cost = cost + getNeigborCost(heardFrom);
+//        fprintf(stdout, "Neihbor Cost [%d] Incoming Cost [%d][Result Cost:%d]\n",getNeigborCost(heardFrom), cost, pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].cost);
+        pathsIKnow[destination].pathsIKnow[pathsIKnow[destination].size+1].pathSize = i;
 
         if(flood==true)
             pathsIKnow[destination].hasUpdates = 1;
         else
             pathsIKnow[destination].hasUpdates = 0;
 
-//        fprintf(stdout,"Increment Size Before [Size:%d]---",pathsIKnow[destination].size);
-        pathsIKnow[destination].size = currentKnownSize;
-//        fprintf(stdout,"After [Size:%d]\n",pathsIKnow[destination].size);
+
+        pathsIKnow[destination].size++;
+//        if(globalMyID==0)
+//            fprintf(stdout,"[Size:%d]",pathsIKnow[destination].size);
 
         free(tofreePath);
 
         if(debugReceiveProcessedCount){
-            receivedAndProcessedFromCount[heardFrom]++;
+            if(pathsIKnow[destination].size != 0) //account for size starting at -1
+                receivedAndProcessedFromCount[heardFrom]++;
+//            if(globalMyID==0)
+//                fprintf(stdout,"[Recev:%d]\n",receivedAndProcessedFromCount[heardFrom]);
         }
 
     }

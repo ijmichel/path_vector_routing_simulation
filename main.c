@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     debugDupPath = false;
     debugAddPath = false;
     debugEstablishNeigh = false;
-    debugSendReceiveCount = true;
+    debugSendReceiveCount = false;
     debugReceiveProcessedCount = true;
 
 	int i;
@@ -93,9 +93,6 @@ int main(int argc, char** argv)
 
     pthread_t updateThread;
     pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
-
-    pthread_t sharingThread;
-    pthread_create(&sharingThread, 0, shareMyPathsToNeighbors, (void*)0);
 
 //    pthread_t disconnectThread;
 //    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
