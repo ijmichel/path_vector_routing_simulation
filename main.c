@@ -14,7 +14,10 @@ int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
-bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect;
+bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount, debugReceiveProcessedCount;
+int receivedFromCount[MAX_NEIGHBOR];
+int sentToCount[MAX_NEIGHBOR];
+int receivedAndProcessedFromCount[MAX_NEIGHBOR];
 FILE * myLogfile;
 
 int main(int argc, char** argv)
@@ -36,13 +39,8 @@ int main(int argc, char** argv)
     debugDupPath = false;
     debugAddPath = false;
     debugEstablishNeigh = false;
-//    if(globalMyID == 1) {
-//        fprintf(stdout, "DEBUG ON ! --> %d \n", globalMyID);
-//        debug = true;
-//    }else {
-//        fprintf(stdout, "DEBUG OFF ! --> %d \n", globalMyID);
-//        debug = false;
-//    }
+    debugSendReceiveCount = true;
+    debugReceiveProcessedCount = true;
 
 	int i;
 	for(i=0;i<MAX_NEIGHBOR;i++)
