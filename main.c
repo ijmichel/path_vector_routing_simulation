@@ -14,7 +14,7 @@ int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
-bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh;
+bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect;
 FILE * myLogfile;
 
 int main(int argc, char** argv)
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	globalMyID = atoi(argv[1]);
 
 
-	debug = false;
+	debug = true;
     newPathDebug = false;
     NNWPATHdebug = false;
     debugDupPath = false;
@@ -99,8 +99,8 @@ int main(int argc, char** argv)
     pthread_t sharingThread;
     pthread_create(&sharingThread, 0, shareMyPathsToNeighbors, (void*)0);
 
-    pthread_t disconnectThread;
-    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
+//    pthread_t disconnectThread;
+//    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
 
 	//good luck, have fun!
 	listenForNeighbors();
