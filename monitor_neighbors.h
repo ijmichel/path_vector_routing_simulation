@@ -13,8 +13,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#define MAX_NEIGHBOR  25
-#define MAX_NUM_PATHS 15
+#define MAX_NEIGHBOR  35
+#define MAX_NUM_PATHS 2000
 #define NOT_HEARD_FROM_SINCE 2
 
 pthread_mutex_t updateLock = PTHREAD_MUTEX_INITIALIZER;
@@ -202,32 +202,35 @@ void *shareMyPathsToNeighbors(void *unusedParam) {
                         if (k != globalMyID && k != i) { //Don't send them my path or their own path
                             if (pathsIKnow[k].size != -1) { //If I actually have paths to them
                                 for (int p = 0; p <= pathsIKnow[k].size; p++) { //go through them and send
-                                    path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
-                                    char *pathToDestination = convertPath(pathWithUpdate);
+                                    if(pathsIKnow[k].pathsIKnow[p].nextHop != i){//Don't se it paths which we already know go to it
+                                        path pathWithUpdate = pathsIKnow[k].pathsIKnow[p];
+                                        char *pathToDestination = convertPath(pathWithUpdate);
 
-                                    //|command|destinationId|data|
-                                    char *destination[4]; //Because 256 is greatest value we get (3 size)
-                                    sprintf(destination, "%d", k);
+                                        //|command|destinationId|data|
+                                        char *destination[4]; //Because 256 is greatest value we get (3 size)
+                                        sprintf(destination, "%d", k);
 
-                                    char *nextHop[4]; //Because the next hop will always be me from my neighbor
-                                    sprintf(nextHop, "%d", globalMyID);
+                                        char *nextHop[4]; //Because the next hop will always be me from my neighbor
+                                        sprintf(nextHop, "%d", globalMyID);
 
-                                    char *costOfPath[6]; //5?  hopefully enough to hold max cost
-                                    sprintf(costOfPath, "%d", pathWithUpdate.cost);
+                                        char *costOfPath[6]; //5?  hopefully enough to hold max cost
+                                        sprintf(costOfPath, "%d", pathWithUpdate.cost);
 
-                                    char *updateMessageToSend = concat(9, "NNWPATH", "|", destination, "|",
-                                                                       pathToDestination, "|", costOfPath, "|",
-                                                                       nextHop);
-                                    if (debug && NNWPATHdebug) {
-                                        fprintf(stdout,
-                                                "[%d] Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s][nextHop:%s][Cost:%s]\n",
-                                                globalMyID,i, k, pathToDestination,nextHop,costOfPath);
+                                        char *updateMessageToSend = concat(9, "NNWPATH", "|", destination, "|",
+                                                                           pathToDestination, "|", costOfPath, "|",
+                                                                           nextHop);
+                                        if (debug && NNWPATHdebug) {
+                                            fprintf(stdout,
+                                                    "[%d] Sending New Neighbor [%d] All my Paths --> One is NEWPATH To [Id:%d][Path:%s][nextHop:%s][Cost:%s]\n",
+                                                    globalMyID,i, k, pathToDestination,nextHop,costOfPath);
+                                        }
+
+
+                                        sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                                               (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+
+                                        free(updateMessageToSend);
                                     }
-                                    sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
-                                           (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
-
-                                    free(updateMessageToSend);
-
                                 }
                             }
                         }
@@ -416,20 +419,16 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 establishNeighbor(heardFrom);
             }
         }else if (!strncmp(recvBuf, "NEWPATH", 7)) {
-            pthread_mutex_lock(&updateLock);
             processNewPath(recvBuf, heardFrom,true);
-            pthread_mutex_unlock(&updateLock);
         }else if (!strncmp(recvBuf, "NNWPATH", 7)) {
-            pthread_mutex_lock(&updateLock);
             processNewPath(recvBuf, heardFrom,true);
-            pthread_mutex_unlock(&updateLock);
         }else if(!strncmp(recvBuf,"dump",4)){
 
             fprintf(stdout, "Received DUMP %d\n",globalMyID);
 
 
             dumpMyPathsToConsole();
-//            dumpMyPathStatsToConsole();
+            dumpMyPathStatsToConsole();
         }else if (!strncmp(recvBuf, "send", 4)  || !strncmp(recvBuf, "frwd", 4)) {
             short int destId = ntohs(*((short int *)(recvBuf+4)));
 
@@ -589,7 +588,6 @@ void hackyUpdateKnownPaths() {
         if (i != globalMyID) {
             char *updateMessageToSend;
             if (pathsIKnow[i].hasUpdates==1) { //If any paths for this destination have updates
-
                 for(int q=0;q<=pathsIKnow[i].size;q++){
                     if(pathsIKnow[i].pathsIKnow[q].hasUpdates == 1){
                         path pathWithUpdate = pathsIKnow[i].pathsIKnow[q];
@@ -613,7 +611,7 @@ void hackyUpdateKnownPaths() {
 
                             for (int possibleNeighbor = 0; possibleNeighbor < MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
 
-                                if(pathsIKnow[possibleNeighbor].isMyNeighbor == 1){
+                                if(pathsIKnow[possibleNeighbor].isMyNeighbor == 1 && pathsIKnow[i].pathsIKnow[q].nextHop != possibleNeighbor){
                                     sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
                                            (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
                                     if (debug && newPathDebug) {
