@@ -58,7 +58,10 @@ extern struct timeval globalLastHeartbeat[MAX_NEIGHBOR];
 extern struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 extern char costs[MAX_NEIGHBOR];
 
-extern bool debug,newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect;
+extern bool debug,newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount,debugReceiveProcessedCount;
+extern int receivedFromCount[MAX_NEIGHBOR];
+extern int sentToCount[MAX_NEIGHBOR];
+extern int receivedAndProcessedFromCount[MAX_NEIGHBOR];
 static const int SLEEPTIME = 300 * 1000 * 1000; //300 ms
 static const int SLEEPTIME_DISCONNECT = 300 * 1000 * 1000 * 3; //900 ms
 extern int globalMyID;
@@ -228,6 +231,10 @@ void *shareMyPathsToNeighbors(void *unusedParam) {
 
                                         sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
                                                (struct sockaddr *) &globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+
+                                        if(debugSendReceiveCount){
+                                            sentToCount[i]++;
+                                        }
 
                                         free(updateMessageToSend);
                                     }
@@ -419,16 +426,40 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 establishNeighbor(heardFrom);
             }
         }else if (!strncmp(recvBuf, "NEWPATH", 7)) {
+            if(debugSendReceiveCount){
+                receivedFromCount[heardFrom]++;
+            }
             processNewPath(recvBuf, heardFrom,true);
         }else if (!strncmp(recvBuf, "NNWPATH", 7)) {
+            if(debugSendReceiveCount){
+                receivedFromCount[heardFrom]++;
+            }
             processNewPath(recvBuf, heardFrom,true);
         }else if(!strncmp(recvBuf,"dump",4)){
 
             fprintf(stdout, "Received DUMP %d\n",globalMyID);
 
+//            dumpMyPathsToConsole();
+//            dumpMyPathStatsToConsole();
+            if(debugSendReceiveCount){
+                for(int m =0; m <MAX_NEIGHBOR;m++){
+                    if(pathsIKnow[m].isMyNeighbor==1)
+                        fprintf(stdout, "[Received:%d][%d]\n",receivedFromCount[m],m);
+                }
+                for(int m =0; m <MAX_NEIGHBOR;m++){
+                    if(pathsIKnow[m].isMyNeighbor==1)
+                        fprintf(stdout, "[Sent:%d][%d]\n",sentToCount[m],m);
+                }
 
-            dumpMyPathsToConsole();
-            dumpMyPathStatsToConsole();
+            }
+
+            if(debugReceiveProcessedCount){
+                for(int m =0; m <MAX_NEIGHBOR;m++){
+                    if(pathsIKnow[m].isMyNeighbor==1)
+                        fprintf(stdout, "[Processed:%d][%d]\n",receivedAndProcessedFromCount[m],m);
+                }
+            }
+
         }else if (!strncmp(recvBuf, "send", 4)  || !strncmp(recvBuf, "frwd", 4)) {
             short int destId = ntohs(*((short int *)(recvBuf+4)));
 
@@ -614,8 +645,12 @@ void hackyUpdateKnownPaths() {
                                 if(pathsIKnow[possibleNeighbor].isMyNeighbor == 1 && pathsIKnow[i].pathsIKnow[q].nextHop != possibleNeighbor){
                                     sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
                                            (struct sockaddr *) &globalNodeAddrs[possibleNeighbor], sizeof(globalNodeAddrs[possibleNeighbor]));
+
                                     if (debug && newPathDebug) {
                                         fprintf(stdout, "[%d] Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",globalMyID,possibleNeighbor, i, pathToDestination);
+                                    }
+                                    if(debugSendReceiveCount){
+                                        sentToCount[possibleNeighbor]++;
                                     }
                                 }
 
@@ -647,7 +682,7 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path, bo
 
         currentKnownSize++;
 
-        if(debugAddPath && destination==66)
+        if(debugAddPath)
             fprintf(stdout, "\nNEW [%d] [heardFrom:%d][destination:%d][cost:%d][path:%s]\n",globalMyID,heardFrom,destination,cost,path);
 
         if(currentKnownSize >= MAX_NUM_PATHS)
@@ -682,6 +717,10 @@ void addNewPath(short heardFrom, int destination, int cost, const char *path, bo
 //        fprintf(stdout,"After [Size:%d]\n",pathsIKnow[destination].size);
 
         free(tofreePath);
+
+        if(debugReceiveProcessedCount){
+            receivedAndProcessedFromCount[heardFrom]++;
+        }
 
     }
 
