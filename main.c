@@ -18,6 +18,7 @@ bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstabli
 int receivedFromCount[MAX_NEIGHBOR];
 int sentToCount[MAX_NEIGHBOR];
 int receivedAndProcessedFromCount[MAX_NEIGHBOR];
+int processedNeighbor[MAX_NEIGHBOR];
 FILE * myLogfile;
 
 int main(int argc, char** argv)
@@ -40,7 +41,7 @@ int main(int argc, char** argv)
     debugAddPath = false;
     debugEstablishNeigh = false;
     debugSendReceiveCount = false;
-    debugReceiveProcessedCount = true;
+    debugReceiveProcessedCount = false;
 
 	int i;
 	for(i=0;i<MAX_NEIGHBOR;i++)
@@ -85,7 +86,7 @@ int main(int argc, char** argv)
         fprintf(stdout,"Unable to Create Log File! --> %s \n", logFileName);
         exit(EXIT_FAILURE);
     }else{
-        fprintf(stdout,"Created Log File! --> %s \n", logFileName);
+//        fprintf(stdout,"Created Log File! --> %s \n", logFileName);
     }
 
 	pthread_t announcerThread;
