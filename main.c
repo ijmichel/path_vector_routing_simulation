@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 	globalMyID = atoi(argv[1]);
 
 
-	debug = true;
+	debug = false;
     newPathDebug = false;
     NNWPATHdebug = false;
     debugDupPath = false;
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
         fprintf(stdout,"Unable to Create Log File! --> %s \n", logFileName);
         exit(EXIT_FAILURE);
     }else{
-//        fprintf(stdout,"Created Log File! --> %s \n", logFileName);
+        fprintf(stdout,"Created Log File! --> %s \n", logFileName);
     }
 
 	pthread_t announcerThread;
