@@ -14,11 +14,12 @@ int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
-bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount, debugReceiveProcessedCount;
+bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount, debugReceiveProcessedCount, debugReceiveNewPath;
 int receivedFromCount[MAX_NEIGHBOR];
 int sentToCount[MAX_NEIGHBOR];
 int receivedAndProcessedFromCount[MAX_NEIGHBOR];
 int processedNeighbor[MAX_NEIGHBOR];
+int maxNFound;
 FILE * myLogfile;
 
 int main(int argc, char** argv)
@@ -34,7 +35,7 @@ int main(int argc, char** argv)
 	globalMyID = atoi(argv[1]);
 
 
-	debug = true;
+	debug = false;
     newPathDebug = false;
     NNWPATHdebug = false;
     debugDupPath = false;
@@ -42,7 +43,8 @@ int main(int argc, char** argv)
     debugEstablishNeigh = false;
     debugSendReceiveCount = false;
     debugReceiveProcessedCount = false;
-    debugDisconnect = true;
+    debugDisconnect = false;
+    debugReceiveNewPath = false;
 
 	int i;
 	for(i=0;i<MAX_NEIGHBOR;i++)
