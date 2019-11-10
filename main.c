@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 	globalMyID = atoi(argv[1]);
 
 
-	debug = false;
+	debug = true;
     newPathDebug = false;
     NNWPATHdebug = false;
     debugDupPath = false;
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     debugEstablishNeigh = false;
     debugSendReceiveCount = false;
     debugReceiveProcessedCount = false;
-    debugDisconnect = false;
+    debugDisconnect = true;
 
 	int i;
 	for(i=0;i<MAX_NEIGHBOR;i++)
@@ -96,8 +96,8 @@ int main(int argc, char** argv)
     pthread_t updateThread;
     pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
 
-    pthread_t disconnectThread;
-    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
+//    pthread_t disconnectThread;
+//    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
 
 	//good luck, have fun!
 	listenForNeighbors();
