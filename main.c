@@ -14,7 +14,7 @@ int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
-bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount, debugReceiveProcessedCount, debugReceiveNewPath;
+bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount, debugReceiveProcessedCount, debugReceiveNewPath, debugDetailedDisconnected;
 int receivedFromCount[MAX_NEIGHBOR];
 int sentToCount[MAX_NEIGHBOR];
 int receivedAndProcessedFromCount[MAX_NEIGHBOR];
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 	globalMyID = atoi(argv[1]);
 
 
-	debug = false;
+	debug = true;
     newPathDebug = false;
     NNWPATHdebug = false;
     debugDupPath = false;
@@ -44,6 +44,7 @@ int main(int argc, char** argv)
     debugSendReceiveCount = false;
     debugReceiveProcessedCount = false;
     debugDisconnect = false;
+    debugDetailedDisconnected = false;
     debugReceiveNewPath = false;
 
 	int i;
@@ -98,8 +99,8 @@ int main(int argc, char** argv)
     pthread_t updateThread;
     pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
 
-//    pthread_t disconnectThread;
-//    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
+    pthread_t disconnectThread;
+    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
 
 	//good luck, have fun!
 	listenForNeighbors();
