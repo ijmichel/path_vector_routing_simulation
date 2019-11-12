@@ -15,9 +15,9 @@
 
 #define MAX_NEIGHBOR  80
 #define MAX_NUM_PATHS 250
-#define NOT_HEARD_FROM_SINCE 3
-static const int SLEEPTIME = 1000 * 1000 * 1000; //1 sec
-static const int SLEEPTIME_DISCONNECT = 1000 * 1000 * 1000 ; //1 sec
+#define NOT_HEARD_FROM_SINCE 8
+static const int SLEEPTIME = 300 * 1000 * 1000; //1 sec
+static const int SLEEPTIME_DISCONNECT = 300 * 1000 * 1000 ; //1 sec
 static const int KEEPALIVETIME = 300 * 1000 * 1000 ; //1 sec
 
 pthread_mutex_t updateLock = PTHREAD_MUTEX_INITIALIZER;
@@ -147,6 +147,7 @@ void extractNewPathData(const unsigned char *recvBuf, char **tofree, int *destin
 
 void sendDisconnect(int i,int q);
 
+void processCurrentDisconnects(int i);
 bool notHeardFromSince(short from, short seconds);
 
 int getNextHop(short destId);
@@ -374,8 +375,6 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
                 updateLastHeardTime(heardFrom);
                 establishNeighbor(heardFrom);
             }
-        }else if (!strncmp(recvBuf, "DSCPATH", 7)) {
-            processDisconnectPath(recvBuf, heardFrom);
         }else if (!strncmp(recvBuf, "NEWPATH", 7)) {
             if(debugSendReceiveCount){
                 receivedFromCount[heardFrom]++;
@@ -463,6 +462,8 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
             }
             fwrite(logLine, 1, strlen(logLine), myLogfile);
             fflush(myLogfile);
+        }else if (!strncmp(recvBuf, "DSCPATH", 7)) {
+            processDisconnectPath(recvBuf, heardFrom);
         }
 }
 
@@ -708,7 +709,7 @@ void sendDisconnect(int i,int q){
 
 }
 
-void processPossibleDisconnect(int i){
+void findPossibleDisonnects(int i){
     bool lostConnToNeigh = notHeardFromSince(i, NOT_HEARD_FROM_SINCE);
 
     int isNeigborAndNotMe = 0 ;
@@ -765,14 +766,51 @@ void processPossibleDisconnect(int i){
 }
 
 //Any disconnects communicate it to neighbors
+void *findDisconnects(void *unusedParam) {
+    struct timespec sleepFor = getHowLongToSleepForDisconnect();
+    while (1) {
+        for (int i = 0; i < MAX_NEIGHBOR; i++) {
+            findPossibleDisonnects(i);
+        }
+    }
+    nanosleep(&sleepFor, 0);
+}
 void *processDisconnects(void *unusedParam) {
     struct timespec sleepFor = getHowLongToSleepForDisconnect();
     while (1) {
         for (int i = 0; i < MAX_NEIGHBOR; i++) {
-            processPossibleDisconnect(i);
+            processCurrentDisconnects(i);
         }
     }
     nanosleep(&sleepFor, 0);
+}
+
+void processCurrentDisconnects(int i) {
+    if(pathsIKnow[i].hasDisconnect == 1) {
+        int foundDisconnect = 0;
+        int bestId = getBestPathID(i);
+        for (int q = 0; q <= pathsIKnow[i].size; q++) {
+            if (pathsIKnow[i].hasDisconnect == 1) {
+                if (pathsIKnow[i].pathsIKnow[q].hasDisconnect == 1) {
+                    foundDisconnect = 1;
+                    if (bestId == q) {
+                        sendDisconnect(i, q);
+                    }
+                    resetPath(i, q);
+                }
+                pthread_mutex_lock(&updateLock);
+                pathsIKnow[i].pathsIKnow[q].hasDisconnect = 0;
+                pthread_mutex_unlock(&updateLock);
+            }
+        }
+
+        pthread_mutex_lock(&updateLock);
+        pathsIKnow[i].hasDisconnect = 0;
+        pthread_mutex_unlock(&updateLock);
+        if(foundDisconnect) {
+            getBestPathToID(i, 1); //recalc best path and send to neihbors
+        }
+    }
 }
 
 void hackyUpdateKnownPaths() {
@@ -780,35 +818,8 @@ void hackyUpdateKnownPaths() {
 //    pthread_mutex_lock(&updateLock);
     for (i = 0; i < MAX_NEIGHBOR; i++) {
         if (i != globalMyID) {
-//            processPossibleDisconnect(i);
             char *updateMessageToSend;
-            if (pathsIKnow[i].hasUpdates == 1 || pathsIKnow[i].needsMyPaths == 1 || pathsIKnow[i].hasDisconnect == 1) { //If any paths for this destination have updates or I need to send neigbhor all my paths
-                if(pathsIKnow[i].hasDisconnect == 1){
-                    int foundDisconnect = 0;
-                    int bestId = getBestPathID(i);
-                    if(bestId != -1){
-                        for (int q = 0; q <= pathsIKnow[i].size; q++) {
-                            if (pathsIKnow[i].pathsIKnow[q].hasDisconnect == 1){
-                                foundDisconnect = 1;
-                                if(bestId==q) {
-                                    sendDisconnect(i, q);
-                                }
-                                resetPath(i, q);
-                            }
-                            pthread_mutex_lock(&updateLock);
-                            pathsIKnow[i].pathsIKnow[q].hasDisconnect = 0;
-                            pthread_mutex_unlock(&updateLock);
-                        }
-                        pthread_mutex_lock(&updateLock);
-                        pathsIKnow[i].hasDisconnect = 0;
-                        pthread_mutex_unlock(&updateLock);
-
-                        if(foundDisconnect) {
-                            getBestPathToID(i, 1); //recalc best path and send to neihbors
-                        }
-                    }
-
-                }
+            if (pathsIKnow[i].hasUpdates == 1 || pathsIKnow[i].needsMyPaths == 1) { //If any paths for this destination have updates or I need to send neigbhor all my paths
                 if (pathsIKnow[i].hasUpdates == 1) {
                     for (int q = 0; q <= pathsIKnow[i].size; q++) {
                         if (pathsIKnow[i].pathsIKnow[q].hasUpdates == 1) {
@@ -1175,8 +1186,8 @@ void updateLastHeardTime(short from) {
     struct timeval tv = getCurrentTime();
     globalLastHeartbeat[from] = tv;
 
-    if(from ==34)
-        fprintf(stdout, "Last Heard from %d at this time --> %d\n", from, globalLastHeartbeat[from]);
+//    if(from ==34)
+//        fprintf(stdout, "Last Heard from %d at this time --> %d\n", from, globalLastHeartbeat[from]);
 }
 
 

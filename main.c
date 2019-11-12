@@ -99,8 +99,11 @@ int main(int argc, char** argv)
     pthread_t updateThread;
     pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
 
-    pthread_t disconnectThread;
-    pthread_create(&disconnectThread, 0, processDisconnects, (void*)0);
+    pthread_t findDisconnectThread;
+    pthread_create(&findDisconnectThread, 0, findDisconnects, (void*)0);
+
+    pthread_t processDisconnectThread;
+    pthread_create(&processDisconnectThread, 0, processDisconnects, (void*)0);
 
 	//good luck, have fun!
 	listenForNeighbors();
