@@ -14,17 +14,15 @@
 #include <stdbool.h>
 
 #define MAX_NEIGHBOR  80
-#define MAX_NUM_PATHS 250
+#define MAX_NUM_PATHS 2500
 #define NOT_HEARD_FROM_SINCE 8
 static const int SLEEPTIME = 300 * 1000 * 1000; //1 sec
-static const int SLEEPTIME_DISCONNECT = 300 * 1000 * 1000 ; //1 sec
-static const int KEEPALIVETIME = 300 * 1000 * 1000 ; //1 sec
+static const int SLEEPTIME_DISCONNECT = 400 * 1000 * 1000 ; //1 sec
+static const int KEEPALIVETIME = 500 * 1000 * 1000 ; //1 sec
 
 pthread_mutex_t updateLock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t addLock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t establishLock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t disconnectLock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t disconnectFoundLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t noUpdateLock = PTHREAD_MUTEX_INITIALIZER;
+
 
 typedef struct {
     int cost; //cost to get there
@@ -69,6 +67,7 @@ extern struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 extern char costs[MAX_NEIGHBOR];
 
 extern bool debug,newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount,debugReceiveProcessedCount, debugReceiveNewPath, debugDetailedDisconnected;
+extern bool noUpdate;
 extern int receivedFromCount[MAX_NEIGHBOR];
 extern int sentToCount[MAX_NEIGHBOR];
 extern int receivedAndProcessedFromCount[MAX_NEIGHBOR];
@@ -365,6 +364,9 @@ void listenForNeighbors() {
 }
 
 void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytesRecvd) {
+    pthread_mutex_lock(&noUpdateLock);
+    noUpdate = true;
+    pthread_mutex_unlock(&noUpdateLock);
     short int heardFrom = -1;
 //    if (strstr(fromAddr, "10.1.1.")) {
         heardFrom = atoi(
@@ -465,6 +467,9 @@ void doWithMessage(const char *fromAddr, const unsigned char *recvBuf, int bytes
         }else if (!strncmp(recvBuf, "DSCPATH", 7)) {
             processDisconnectPath(recvBuf, heardFrom);
         }
+    pthread_mutex_lock(&noUpdateLock);
+    noUpdate = false;
+    pthread_mutex_unlock(&noUpdateLock);
 }
 
 void resetPath(short disconnectId, int i) {
@@ -682,7 +687,7 @@ void sendDisconnect(int i,int q){
 
             for (int possibleNeighbor = 0; possibleNeighbor <
                                            MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
-                if (pathsIKnow[possibleNeighbor].isMyNeighbor == 1 && possibleNeighbor != i) {
+                if (possibleNeighbor != i) {
                     if(debug && debugDisconnect) {
                                 fprintf(stdout,
                                         "[%d] Sending Disconnect [To:%d][Message:%s][Destination:%d][nextHop:%s][cost:%s] \n",
@@ -712,56 +717,55 @@ void sendDisconnect(int i,int q){
 void findPossibleDisonnects(int i){
     bool lostConnToNeigh = notHeardFromSince(i, NOT_HEARD_FROM_SINCE);
 
-    int isNeigborAndNotMe = 0 ;
-    if((i != globalMyID) && pathsIKnow[i].isMyNeighbor==1){
-        isNeigborAndNotMe = 1;
-    }
-
-    int immediateNeighborDisonnect = 0;
-    if(lostConnToNeigh && isNeigborAndNotMe){
-        immediateNeighborDisonnect = 1;
-    }
-
-    if (immediateNeighborDisonnect==1) {
-        fprintf(stdout,"[%d] Found Disconnect to [%d]\n",globalMyID,i);
-        for (int q = 0; q <= pathsIKnow[i].size; q++) {
-            if (pathsIKnow[i].pathsIKnow[q].nextHop==i) {
-                //To send disconnect to this direct destination
-                pthread_mutex_lock(&updateLock);
-                pathsIKnow[i].pathsIKnow[q].hasDisconnect=1;
-                pthread_mutex_unlock(&updateLock);
+    if (lostConnToNeigh == true && (i==11 || i ==66) && (globalMyID==11 || globalMyID==66)) {
+        if(noUpdate==false){
+            pthread_mutex_lock(&noUpdateLock);
+            noUpdate = true;
+            pthread_mutex_unlock(&noUpdateLock);
+            fprintf(stdout,"[%d] Found Disconnect to [%d]\n",globalMyID,i);
+            for (int q = 0; q <= pathsIKnow[i].size; q++) {
+                if (pathsIKnow[i].pathsIKnow[q].nextHop==i) {
+                    //To send disconnect to this direct destination
+                    pthread_mutex_lock(&updateLock);
+                    pathsIKnow[i].pathsIKnow[q].hasDisconnect=1;
+                    pthread_mutex_unlock(&updateLock);
+                }
             }
-        }
 
-        pthread_mutex_lock(&updateLock);
-        pathsIKnow[i].isMyNeighbor = 0;
-        pathsIKnow[i].alreadyProcessedNeighbor = 0;
-        pathsIKnow[i].hasDisconnect=1;
-        pthread_mutex_unlock(&updateLock);
+            pthread_mutex_lock(&updateLock);
+            pathsIKnow[i].isMyNeighbor = 0;
+            pathsIKnow[i].alreadyProcessedNeighbor = 0;
+            pathsIKnow[i].hasDisconnect=1;
+            pthread_mutex_unlock(&updateLock);
 
-        for (int nei = 0; nei <= MAX_NEIGHBOR; nei++) {
-            if(nei != i){
-                int bestPathId= getBestPathID(nei);
-                if(bestPathId != -1 ){
-                    int foundDisconnect = 0;
-                    for (int l = 0; l <= pathsIKnow[nei].size; l++) {
-                        if(pathsIKnow[nei].pathsIKnow[l].nextHop==i){
-                            foundDisconnect = 1;
-                            if(bestPathId==l){
-                                pthread_mutex_lock(&updateLock);
-                                pathsIKnow[nei].pathsIKnow[l].hasDisconnect=1;
-                                pthread_mutex_unlock(&updateLock);
+            for (int nei = 0; nei <= MAX_NEIGHBOR; nei++) {
+                if(nei != i){
+                    int bestPathId= getBestPathID(nei);
+                    if(bestPathId != -1 ){
+                        int foundDisconnect = 0;
+                        for (int l = 0; l <= pathsIKnow[nei].size; l++) {
+                            if(pathsIKnow[nei].pathsIKnow[l].nextHop==i){
+                                foundDisconnect = 1;
+                                if(bestPathId==l){
+                                    pthread_mutex_lock(&updateLock);
+                                    pathsIKnow[nei].pathsIKnow[l].hasDisconnect=1;
+                                    pthread_mutex_unlock(&updateLock);
+                                }
                             }
                         }
-                    }
-                    if(foundDisconnect == 1) {
-                        pthread_mutex_lock(&updateLock);
-                        pathsIKnow[nei].hasDisconnect=1;
-                        pthread_mutex_unlock(&updateLock);
+                        if(foundDisconnect == 1) {
+                            pthread_mutex_lock(&updateLock);
+                            pathsIKnow[nei].hasDisconnect=1;
+                            pthread_mutex_unlock(&updateLock);
+                        }
                     }
                 }
             }
+            pthread_mutex_lock(&noUpdateLock);
+            noUpdate = false;
+            pthread_mutex_unlock(&noUpdateLock);
         }
+
     }
 }
 
@@ -770,7 +774,10 @@ void *findDisconnects(void *unusedParam) {
     struct timespec sleepFor = getHowLongToSleepForDisconnect();
     while (1) {
         for (int i = 0; i < MAX_NEIGHBOR; i++) {
-            findPossibleDisonnects(i);
+            if((i != globalMyID) && pathsIKnow[i].isMyNeighbor==1){
+                findPossibleDisonnects(i);
+            }
+
         }
     }
     nanosleep(&sleepFor, 0);
@@ -786,11 +793,11 @@ void *processDisconnects(void *unusedParam) {
 }
 
 void processCurrentDisconnects(int i) {
-    if(pathsIKnow[i].hasDisconnect == 1) {
-        int foundDisconnect = 0;
-        int bestId = getBestPathID(i);
-        for (int q = 0; q <= pathsIKnow[i].size; q++) {
-            if (pathsIKnow[i].hasDisconnect == 1) {
+    if(noUpdate == false){
+        if(pathsIKnow[i].hasDisconnect == 1) {
+            int foundDisconnect = 0;
+            int bestId = getBestPathID(i);
+            for (int q = 0; q <= pathsIKnow[i].size; q++) {
                 if (pathsIKnow[i].pathsIKnow[q].hasDisconnect == 1) {
                     foundDisconnect = 1;
                     if (bestId == q) {
@@ -802,85 +809,87 @@ void processCurrentDisconnects(int i) {
                 pathsIKnow[i].pathsIKnow[q].hasDisconnect = 0;
                 pthread_mutex_unlock(&updateLock);
             }
-        }
 
-        pthread_mutex_lock(&updateLock);
-        pathsIKnow[i].hasDisconnect = 0;
-        pthread_mutex_unlock(&updateLock);
-        if(foundDisconnect) {
-            getBestPathToID(i, 1); //recalc best path and send to neihbors
+            pthread_mutex_lock(&updateLock);
+            pathsIKnow[i].hasDisconnect = 0;
+            pthread_mutex_unlock(&updateLock);
+            if(foundDisconnect) {
+                getBestPathToID(i, 1); //recalc best path and send to neihbors
+            }
         }
     }
 }
 
 void hackyUpdateKnownPaths() {
     int i;
-//    pthread_mutex_lock(&updateLock);
     for (i = 0; i < MAX_NEIGHBOR; i++) {
         if (i != globalMyID) {
             char *updateMessageToSend;
             if (pathsIKnow[i].hasUpdates == 1 || pathsIKnow[i].needsMyPaths == 1) { //If any paths for this destination have updates or I need to send neigbhor all my paths
-                if (pathsIKnow[i].hasUpdates == 1) {
-                    for (int q = 0; q <= pathsIKnow[i].size; q++) {
-                        if (pathsIKnow[i].pathsIKnow[q].hasUpdates == 1) {
-                            path pathWithUpdate = pathsIKnow[i].pathsIKnow[q];
-                            if(pathWithUpdate.cost != 999){
-                                char *pathToDestination = convertPath(pathWithUpdate);
+                if(noUpdate == false){
+                    if (pathsIKnow[i].hasUpdates == 1) {
+                        for (int q = 0; q <= pathsIKnow[i].size; q++) {
+                            if (pathsIKnow[i].pathsIKnow[q].hasUpdates == 1) {
+                                path pathWithUpdate = pathsIKnow[i].pathsIKnow[q];
+                                if(pathWithUpdate.cost != 999){
+                                    char *pathToDestination = convertPath(pathWithUpdate);
 
-                                //|command|destinationId|data|
-                                char *destination[3]; //Because 256 is greatest value we get (3 size)
-                                sprintf(destination, "%d", i);
+                                    //|command|destinationId|data|
+                                    char *destination[3]; //Because 256 is greatest value we get (3 size)
+                                    sprintf(destination, "%d", i);
 
-                                char *nextHop[3]; //Because the next hop will always be me from my neighbor
-                                sprintf(nextHop, "%d", globalMyID);
+                                    char *nextHop[3]; //Because the next hop will always be me from my neighbor
+                                    sprintf(nextHop, "%d", globalMyID);
 
-                                char *costOfPath[5]; //5?  hopefully enough to hold max cost
-                                sprintf(costOfPath, "%d", pathWithUpdate.cost);
+                                    char *costOfPath[5]; //5?  hopefully enough to hold max cost
+                                    sprintf(costOfPath, "%d", pathWithUpdate.cost);
 
-                                updateMessageToSend = concat(9, "NEWPATH", "|", destination, "|", pathToDestination,
-                                                             "|", costOfPath, "|", nextHop);
+                                    updateMessageToSend = concat(9, "NEWPATH", "|", destination, "|", pathToDestination,
+                                                                 "|", costOfPath, "|", nextHop);
 
-                                for (int possibleNeighbor = 0; possibleNeighbor <
-                                                               MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
+                                    for (int possibleNeighbor = 0; possibleNeighbor <
+                                                                   MAX_NEIGHBOR; possibleNeighbor++) {//Tell all about my new fancy path
 
-                                    if (pathsIKnow[possibleNeighbor].isMyNeighbor == 1 &&
-                                        pathsIKnow[i].pathsIKnow[q].nextHop != possibleNeighbor) {
+                                        if (pathsIKnow[possibleNeighbor].isMyNeighbor == 1 &&
+                                            pathsIKnow[i].pathsIKnow[q].nextHop != possibleNeighbor) {
 
-                                        if (amIInPath(pathToDestination, possibleNeighbor) == false) {
-                                            sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
-                                                   (struct sockaddr *) &globalNodeAddrs[possibleNeighbor],
-                                                   sizeof(globalNodeAddrs[possibleNeighbor]));
+                                            if (amIInPath(pathToDestination, possibleNeighbor) == false) {
+                                                sendto(globalSocketUDP, updateMessageToSend, strlen(updateMessageToSend), 0,
+                                                       (struct sockaddr *) &globalNodeAddrs[possibleNeighbor],
+                                                       sizeof(globalNodeAddrs[possibleNeighbor]));
 
-                                            if (debug && newPathDebug && globalMyID==11) {
-                                                fprintf(stdout,
-                                                        "[%d] Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",
-                                                        globalMyID, possibleNeighbor, i, pathToDestination);
+                                                if (debug && newPathDebug && globalMyID==11) {
+                                                    fprintf(stdout,
+                                                            "[%d] Update Neighbor [%d] With NEWPATH To [Id:%d][Path:%s]\n",
+                                                            globalMyID, possibleNeighbor, i, pathToDestination);
+                                                }
+                                                if (debugSendReceiveCount) {
+                                                    sentToCount[possibleNeighbor]++;
+                                                }
                                             }
-                                            if (debugSendReceiveCount) {
-                                                sentToCount[possibleNeighbor]++;
-                                            }
+
                                         }
 
                                     }
-
+                                    free(updateMessageToSend);
+                                    pthread_mutex_lock(&updateLock);
+                                    pathsIKnow[i].pathsIKnow[q].hasUpdates = 0;
+                                    pthread_mutex_unlock(&updateLock);
                                 }
-                                free(updateMessageToSend);
-                                pthread_mutex_lock(&updateLock);
-                                pathsIKnow[i].pathsIKnow[q].hasUpdates = 0;
-                                pthread_mutex_unlock(&updateLock);
                             }
                         }
+                        pthread_mutex_lock(&updateLock);
+                        pathsIKnow[i].hasUpdates = 0; //so we don't send updates again
+                        pthread_mutex_unlock(&updateLock);
                     }
-                    pthread_mutex_lock(&updateLock);
-                    pathsIKnow[i].hasUpdates = 0; //so we don't send updates again
-                    pthread_mutex_unlock(&updateLock);
+                    if (pathsIKnow[i].needsMyPaths == 1) {
+                        shareMyPathsToNeighbor(i);
+                        pthread_mutex_lock(&updateLock);
+                        pathsIKnow[i].needsMyPaths = 0;
+                        pthread_mutex_unlock(&updateLock);
+                    }
                 }
-                if (pathsIKnow[i].needsMyPaths == 1) {
-                    shareMyPathsToNeighbor(i);
-                    pthread_mutex_lock(&updateLock);
-                    pathsIKnow[i].needsMyPaths = 0;
-                    pthread_mutex_unlock(&updateLock);
-                }
+
             }
         }
     }
@@ -1051,8 +1060,11 @@ void disconnectPath(short heardFrom, int destination, int cost, const char *path
                 //Because the path coming is backwards to what we send on DSCPATH
                 if (strcmp(strPath, convertPathBackwardsWithoutSelf(pathsIKnow[destination].pathsIKnow[q])) == 0) {
                     pthread_mutex_lock(&updateLock);
-                    pathsIKnow[destination].pathsIKnow[q].hasDisconnect = 1;
-                    pathsIKnow[destination].hasDisconnect = 1;
+                    int bestId = getBestPathID(destination);
+                    if(bestId == q){
+                        pathsIKnow[destination].pathsIKnow[q].hasDisconnect = 1;
+                        pathsIKnow[destination].hasDisconnect = 1;
+                    }
                     pthread_mutex_unlock(&updateLock);
 //                    if(debug && debugDisconnect)
 //                        fprintf(stdout, "[%d] MARKED Disconnect [to:%d][nextHop:%d][cost:%d][path:%s] \n",globalMyID,destination,heardFrom,cost,path);

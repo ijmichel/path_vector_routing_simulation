@@ -15,6 +15,7 @@ struct sockaddr_in globalNodeAddrs[MAX_NEIGHBOR];
 char costs[MAX_NEIGHBOR];
 paths pathsIKnow[MAX_NEIGHBOR];
 bool debug, newPathDebug, NNWPATHdebug, debugDupPath, debugAddPath, debugEstablishNeigh, debugDisconnect, debugSendReceiveCount, debugReceiveProcessedCount, debugReceiveNewPath, debugDetailedDisconnected;
+bool noUpdate;
 int receivedFromCount[MAX_NEIGHBOR];
 int sentToCount[MAX_NEIGHBOR];
 int receivedAndProcessedFromCount[MAX_NEIGHBOR];
@@ -46,6 +47,7 @@ int main(int argc, char** argv)
     debugDisconnect = false;
     debugDetailedDisconnected = false;
     debugReceiveNewPath = false;
+    noUpdate = false;
 
 	int i;
 	for(i=0;i<MAX_NEIGHBOR;i++)
@@ -94,7 +96,19 @@ int main(int argc, char** argv)
     }
 
 	pthread_t announcerThread;
-	pthread_create(&announcerThread, 0, announceToNeighbors, (void*)0);
+    pthread_attr_t thAttr;
+    int policy = 0;
+    int max_prio_for_policy = 0;
+
+    pthread_attr_init(&thAttr);
+    pthread_attr_getschedpolicy(&thAttr, &policy);
+    max_prio_for_policy = sched_get_priority_max(policy);
+
+
+    pthread_setschedprio(announcerThread, max_prio_for_policy);
+    pthread_attr_destroy(&thAttr);
+	pthread_create(&announcerThread, &thAttr, announceToNeighbors, (void*)0);
+
 
     pthread_t updateThread;
     pthread_create(&updateThread, 0, updateToNeighbors, (void*)0);
